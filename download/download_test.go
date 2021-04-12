@@ -13,7 +13,7 @@ import (
 func TestDownload(t *testing.T) {
 
     // Create a temp file for the test
-    content := make([]byte, 2048 + 1024)
+    content := make([]byte, 2048 * 1024 + 1024)
 
 	tmpDir, err := ioutil.TempDir("", "test")
 	if err != nil {
@@ -30,12 +30,11 @@ func TestDownload(t *testing.T) {
     serverErrch := make(chan error)
     serverCtx, serverCtxCancel := context.WithTimeout(context.Background(), time.Second * 2)
     defer serverCtxCancel()
+    server := NewServer(serverCtx, "127.0.0.1:50000")
     go func() {
-        serverErrch <- RunServer(serverCtx, "127.0.0.1:50000")
+        serverErrch <- server.Start()
     }()
-
-    // Let server up
-    time.Sleep(time.Second * 1)
+    defer server.Stop()
 
     // Run client
     clientCtx, clientCtxCancel := context.WithTimeout(context.Background(), time.Second * 2)

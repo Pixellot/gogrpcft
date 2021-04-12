@@ -18,13 +18,21 @@ const (
     chunkSize = 2048
 )
 
-type server struct {
+type Server struct {
     pb.UnimplementedFilesTransferServer
 
     sentErr chan error
+    ctx context.Context
+    address string
+
+    grpcser *grpc.Server
 }
 
-func (s *server) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServer) error {
+func NewServer(ctx context.Context, address string) *Server {
+    return &Server{ctx: ctx, address: address, sentErr: make(chan error)}
+}
+
+func (s *Server) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServer) error {
 
     info, err := os.Stat(in.Path)
     if os.IsNotExist(err) {
@@ -76,28 +84,28 @@ func (s *server) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServe
     return nil
 }
 
-func RunServer(ctx context.Context, address string) error {
-
-    lis, err := net.Listen("tcp", address)
+func (s *Server) Start() error {
+    lis, err := net.Listen("tcp", s.address)
     if err != nil {
         return fmt.Errorf("Failed to listen: %v", err)
     }
 
-    obj := &server{sentErr: make(chan error)}
-    ser := grpc.NewServer()
-    pb.RegisterFilesTransferServer(ser, obj)
+    s.grpcser = grpc.NewServer()
+    pb.RegisterFilesTransferServer(s.grpcser, s)
 
     go func() {
-        ser.Serve(lis)
+        s.grpcser.Serve(lis)
     }()
 
     select {
-    case err := <-obj.sentErr:
-        ser.Stop()
+    case err := <-s.sentErr:
         return err
-    case <-ctx.Done():
-        ser.Stop()
-        return ctx.Err()
+    case <-s.ctx.Done():
+        return s.ctx.Err()
     }
+}
+
+func (s* Server) Stop() {
+    s.grpcser.Stop()
 }
 
