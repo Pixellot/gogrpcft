@@ -15,6 +15,7 @@ const (
     chunkSize = 2048
 )
 
+// RunClient uploads a file from src to remote via address.
 func RunClient(ctx context.Context, address, src, remote string) error {
 
     info, err := os.Stat(src)

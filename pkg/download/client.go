@@ -11,6 +11,7 @@ import (
     pb "github.com/oren12321/gogrpcft/internal/proto"
 )
 
+// RunClient downloads a file from remote to dst via address.
 func RunClient(ctx context.Context, address, remote, dst string) error {
 
     conn, err := grpc.Dial(address, grpc.WithInsecure())

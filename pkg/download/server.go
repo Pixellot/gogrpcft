@@ -18,6 +18,7 @@ const (
     chunkSize = 2048
 )
 
+// Server represents a server side for files downloading.
 type Server struct {
     pb.UnimplementedFilesTransferServer
 
@@ -28,6 +29,7 @@ type Server struct {
     grpcser *grpc.Server
 }
 
+// NewServer returns new Server.
 func NewServer(ctx context.Context, address string) *Server {
     return &Server{ctx: ctx, address: address, sentErr: make(chan error)}
 }
@@ -84,6 +86,7 @@ func (s *Server) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServe
     return nil
 }
 
+// Start starts the server.
 func (s *Server) Start() error {
     lis, err := net.Listen("tcp", s.address)
     if err != nil {
@@ -105,6 +108,7 @@ func (s *Server) Start() error {
     }
 }
 
+// Stop stops the server.
 func (s* Server) Stop() {
     s.grpcser.Stop()
 }
