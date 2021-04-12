@@ -28,7 +28,7 @@ func RunClient(ctx context.Context, address, remote, dst string) error {
 
     f, err := os.Create(dst)
     if err != nil {
-        return fmt.Errorf("Failed to create downloaded file: %v", err)
+        return fmt.Errorf("failed to create downloaded file: %v", err)
     }
     defer f.Close()
 
@@ -48,8 +48,8 @@ func RunClient(ctx context.Context, address, remote, dst string) error {
 
             data := res.Data
             size := len(res.Data)
-            if _, err = f.Write(data[:size]); err != nil {
-                errch <- fmt.Errorf("Failed to write chunk: %v", err)
+            if _, err := f.Write(data[:size]); err != nil {
+                errch <- fmt.Errorf("failed to write chunk: %v", err)
                 return
             }
         }

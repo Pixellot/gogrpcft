@@ -53,7 +53,7 @@ func (s *Server) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServe
 
 	f, err := os.Open(in.Path)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to open file: %s", in.Path)
+		errMsg := fmt.Sprintf("failed to open file %s: %v", in.Path, err)
         s.sentErr <- fmt.Errorf(errMsg)
         return status.Errorf(codes.FailedPrecondition, errMsg)
 	}
@@ -64,7 +64,7 @@ func (s *Server) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServe
 	for {
 		n, err := f.Read(buf)
         if err == io.EOF {
-            break;
+            break
         }
         if err != nil {
             errMsg := fmt.Sprintf("failed to read chunk: %v", err)
