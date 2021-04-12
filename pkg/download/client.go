@@ -8,7 +8,7 @@ import (
 
     "google.golang.org/grpc"
 
-    pb "github.com/oren12321/gogrpcft/proto"
+    pb "github.com/oren12321/gogrpcft/internal/proto"
 )
 
 func RunClient(ctx context.Context, address, remote, dst string) error {

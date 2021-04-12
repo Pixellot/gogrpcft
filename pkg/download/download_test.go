@@ -33,8 +33,8 @@ func TestDownload(t *testing.T) {
     server := NewServer(serverCtx, "127.0.0.1:50000")
     go func() {
         serverErrch <- server.Start()
+        defer server.Stop()
     }()
-    defer server.Stop()
 
     // Run client
     clientCtx, clientCtxCancel := context.WithTimeout(context.Background(), time.Second * 2)
