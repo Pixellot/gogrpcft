@@ -31,7 +31,7 @@ type Server struct {
 
 // NewServer returns new Server.
 func NewServer(ctx context.Context, address string) *Server {
-    return &Server{ctx: ctx, address: address, sentErr: make(chan error)}
+    return &Server{ctx: ctx, address: address, sentErr: make(chan error, 1)}
 }
 
 func (s *Server) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServer) error {
@@ -97,7 +97,9 @@ func (s *Server) Start(outerrch chan<- error) {
     pb.RegisterFilesTransferServer(s.grpcser, s)
 
     go func() {
-        s.grpcser.Serve(lis)
+        if err := s.grpcser.Serve(lis); err != nil {
+            outerrch <- err
+        }
     }()
 
     for {
@@ -113,6 +115,6 @@ func (s *Server) Start(outerrch chan<- error) {
 
 // Stop stops the server.
 func (s* Server) Stop() {
-    s.grpcser.Stop()
+    s.grpcser.GracefulStop()
 }
 
