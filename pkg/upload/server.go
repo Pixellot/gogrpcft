@@ -120,10 +120,10 @@ func (s *Server) Upload(stream pb.FilesTransfer_UploadServer) error {
 }
 
 // Start starts the server.
-func (s *Server) Start() error {
+func (s *Server) Start(outerrch chan<- error) {
     lis, err := net.Listen("tcp", s.address)
     if err != nil {
-        return fmt.Errorf("Failed to listen: %v", err)
+        outerrch <- fmt.Errorf("Failed to listen: %v", err)
     }
 
     s.grpcser = grpc.NewServer()
@@ -133,11 +133,14 @@ func (s *Server) Start() error {
         s.grpcser.Serve(lis)
     }()
 
-    select {
-    case err := <-s.sentErr:
-        return err
-    case <-s.ctx.Done():
-        return s.ctx.Err()
+    for {
+        select {
+        case err := <-s.sentErr:
+            outerrch <- err
+        case <-s.ctx.Done():
+            outerrch <- s.ctx.Err()
+            return
+        }
     }
 }
 

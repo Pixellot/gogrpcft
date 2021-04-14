@@ -32,7 +32,7 @@ func TestDownload(t *testing.T) {
     defer serverCtxCancel()
     server := NewServer(serverCtx, "127.0.0.1:50000")
     go func() {
-        serverErrch <- server.Start()
+        server.Start(serverErrch)
         defer server.Stop()
     }()
 
