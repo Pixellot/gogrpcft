@@ -9,7 +9,7 @@ import (
     "google.golang.org/grpc/codes"
     "google.golang.org/grpc/status"
 
-    pb "github.com/oren12321/gogrpcft/internal/proto"
+    pb "github.com/oren12321/gogrpcft/v2/internal/proto"
 )
 
 // RegisterFilesTransferServer registers a files transferring service to a given gRPC server.

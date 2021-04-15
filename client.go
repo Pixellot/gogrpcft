@@ -9,7 +9,7 @@ import (
 
     "google.golang.org/grpc"
 
-    pb "github.com/oren12321/gogrpcft/internal/proto"
+    pb "github.com/oren12321/gogrpcft/v2/internal/proto"
 )
 
 // CreateFilesTransferClient returns gRPC client given a connection.
