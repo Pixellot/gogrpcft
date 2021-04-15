@@ -1,4 +1,4 @@
-package upload
+package gogrpcft
 
 import (
     "testing"
@@ -8,9 +8,12 @@ import (
     "os"
     "time"
     "bytes"
+    "net"
+
+    "google.golang.org/grpc"
 )
 
-func TestDownload(t *testing.T) {
+func TestUpload(t *testing.T) {
 
     // Create a temp file for the test
     content := make([]byte, 2048 * 1024 + 1024)
@@ -27,26 +30,46 @@ func TestDownload(t *testing.T) {
 	}
 
     // Run server
-    serverErrch := make(chan error)
-    serverCtx, serverCtxCancel := context.WithTimeout(context.Background(), time.Second * 2)
-    defer serverCtxCancel()
-    server := NewServer(serverCtx, "127.0.0.1:50001")
+
+    lis, err := net.Listen("tcp", "127.0.0.1:50001")
+    if err != nil {
+        t.Fatalf("Failed to listen: %v", err)
+    }
+
+    server := grpc.NewServer()
+    RegisterFilesTransferServer(server)
+
+    //serverErrch := make(chan error)
+    //serverCtx, serverCtxCancel := context.WithTimeout(context.Background(), time.Second * 2)
+    //defer serverCtxCancel()
+    //server := NewServer(serverCtx, "127.0.0.1:50001")
     go func() {
-        server.Start(serverErrch)
+        server.Serve(lis)
     }()
-    defer server.Stop()
+    defer server.GracefulStop()
 
     // Run client
+
+    conn, err := grpc.Dial("127.0.0.1:50001", grpc.WithInsecure(), grpc.WithBlock()/*, grpc.WithTimeout(time.Second)*/)
+    if err != nil {
+        t.Fatalf("gRPC connect failed: %v", err)
+    }
+    defer conn.Close()
+
+    client := CreateFilesTransferClient(conn)
+
+    uploadPath := filepath.Join(tmpDir, "upload_tempfile")
+    for i := 0; i < 10; i++ {
     clientCtx, clientCtxCancel := context.WithTimeout(context.Background(), time.Second * 2)
     defer clientCtxCancel()
-    uploadPath := filepath.Join(tmpDir, "upload_tempfile")
-    if err := RunClient(clientCtx, "127.0.0.1:50001", srcPath, uploadPath); err != nil {
+    if err := UploadFile(client, clientCtx, srcPath, uploadPath); err != nil {
         t.Fatalf("client failed: %v", err)
     }
+}
 
-    if err := <-serverErrch; err != nil {
+    /*if err := <-serverErrch; err != nil {
         t.Fatalf("server failed: %v", err)
-    }
+    }*/
 
     // Compare remote and downloaded files
     srcf, err := ioutil.ReadFile(srcPath)

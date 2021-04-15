@@ -1,4 +1,4 @@
-package download
+package gogrpcft
 
 import (
     "testing"
@@ -8,6 +8,9 @@ import (
     "os"
     "time"
     "bytes"
+    "net"
+
+    "google.golang.org/grpc"
 )
 
 func TestDownload(t *testing.T) {
@@ -27,26 +30,40 @@ func TestDownload(t *testing.T) {
 	}
 
     // Run server
-    serverErrch := make(chan error)
-    serverCtx, serverCtxCancel := context.WithTimeout(context.Background(), time.Second * 2)
-    defer serverCtxCancel()
-    server := NewServer(serverCtx, "127.0.0.1:50000")
+
+    lis, err := net.Listen("tcp", "127.0.0.1:50000")
+    if err != nil {
+        t.Fatalf("Failed to listen: %v", err)
+    }
+
+    server := grpc.NewServer()
+    RegisterFilesTransferServer(server)
+
+    //serverCtx, serverCtxCancel := context.WithTimeout(context.Background(), time.Second * 2)
+    //defer serverCtxCancel()
+    //server := NewServer(serverCtx, "127.0.0.1:50000")
     go func() {
-        server.Start(serverErrch)
+        server.Serve(lis)
     }()
-    defer server.Stop()
+    defer server.GracefulStop()
+
+    conn, err := grpc.Dial("127.0.0.1:50000", grpc.WithInsecure(), grpc.WithBlock()/*, grpc.WithTimeout(time.Second)*/)
+    if err != nil {
+        t.Fatalf("gRPC connect failed: %v", err)
+    }
+    defer conn.Close()
 
     // Run client
+    client := CreateFilesTransferClient(conn)
+
+    dstPath := filepath.Join(tmpDir, "dst_tempfile")
+    for i := 0; i < 10; i++ {
     clientCtx, clientCtxCancel := context.WithTimeout(context.Background(), time.Second * 2)
     defer clientCtxCancel()
-    dstPath := filepath.Join(tmpDir, "dst_tempfile")
-    if err := RunClient(clientCtx, "127.0.0.1:50000", remotePath, dstPath); err != nil {
+    if err := DownloadFile(client, clientCtx, remotePath, dstPath); err != nil {
         t.Fatalf("client failed: %v", err)
     }
-
-    if err := <-serverErrch; err != nil {
-        t.Fatalf("server failed: %v", err)
-    }
+}
 
     // Compare remote and downloaded files
     remotef, err := ioutil.ReadFile(remotePath)
