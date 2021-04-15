@@ -12,6 +12,7 @@ import (
     pb "github.com/oren12321/gogrpcft/internal/proto"
 )
 
+// RegisterFilesTransferServer registers a files transferring service to a given gRPC server.
 func RegisterFilesTransferServer(server *grpc.Server) {
     pb.RegisterFilesTransferServer(server, &filesTransferServer{})
 }
@@ -20,6 +21,8 @@ type filesTransferServer struct {
     pb.UnimplementedFilesTransferServer
 }
 
+// Download is the file download implementation of the files transferring service.
+// comment: should not be used directly.
 func (s *filesTransferServer) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServer) error {
 
     info, err := os.Stat(in.Path)
@@ -66,6 +69,8 @@ func (s *filesTransferServer) Download(in *pb.FileInfo, stream pb.FilesTransfer_
     return nil
 }
 
+// Upload is the file upload implementation of the files transferring service.
+// comment: should not be used directly.
 func (s *filesTransferServer) Upload(stream pb.FilesTransfer_UploadServer) error {
 
     packet, err := stream.Recv()

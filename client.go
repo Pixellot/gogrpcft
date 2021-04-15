@@ -11,19 +11,21 @@ import (
     pb "github.com/oren12321/gogrpcft/internal/proto"
 )
 
+// CreateFilesTransferClient returns gRPC client given a connection.
 func CreateFilesTransferClient(conn *grpc.ClientConn) pb.FilesTransferClient {
     return pb.NewFilesTransferClient(conn)
 }
 
-func DownloadFile(client pb.FilesTransferClient, ctx context.Context, remote, dst string) error {
+// DownloadFile downloads a file from destination to source.
+func DownloadFile(client pb.FilesTransferClient, ctx context.Context, from, to string) error {
 
-    req := &pb.FileInfo{Path: remote}
+    req := &pb.FileInfo{Path: from}
     stream, err := client.Download(ctx, req)
     if err != nil {
         return fmt.Errorf("gRPC stream fetch failed: %v", err)
     }
 
-    f, err := os.Create(dst)
+    f, err := os.Create(to)
     if err != nil {
         return fmt.Errorf("failed to create downloaded file: %v", err)
     }
@@ -60,17 +62,18 @@ func DownloadFile(client pb.FilesTransferClient, ctx context.Context, remote, ds
     }
 }
 
-func UploadFile(client pb.FilesTransferClient, ctx context.Context, src, remote string) error {
+// UploadFile uploads file from srouce to destination.
+func UploadFile(client pb.FilesTransferClient, ctx context.Context, from, to string) error {
 
-    info, err := os.Stat(src)
+    info, err := os.Stat(from)
     if os.IsNotExist(err) {
-        return fmt.Errorf("path not found: %s", src)
+        return fmt.Errorf("path not found: %s", from)
     }
     if info.IsDir() {
-        return fmt.Errorf("unable to upload directory: %s", src)
+        return fmt.Errorf("unable to upload directory: %s", from)
     }
     if info.Size() == 0 {
-        return fmt.Errorf("file is empty: %s", src)
+        return fmt.Errorf("file is empty: %s", from)
     }
 
     stream, err := client.Upload(ctx)
@@ -81,7 +84,7 @@ func UploadFile(client pb.FilesTransferClient, ctx context.Context, src, remote 
     req := &pb.Packet{
         PacketOptions: &pb.Packet_FileInfo{
             FileInfo: &pb.FileInfo{
-                Path: remote,
+                Path: to,
             },
         },
     }
@@ -89,9 +92,9 @@ func UploadFile(client pb.FilesTransferClient, ctx context.Context, src, remote 
         return fmt.Errorf("failed to send packet path info: %v", err)
     }
 
-	f, err := os.Open(src)
+	f, err := os.Open(from)
 	if err != nil {
-		return fmt.Errorf("failed to open file %s: %v", src, err)
+		return fmt.Errorf("failed to open file %s: %v", from, err)
 	}
 	defer f.Close()
 
@@ -99,8 +102,7 @@ func UploadFile(client pb.FilesTransferClient, ctx context.Context, src, remote 
 
     go func() {
 
-        chunkSize := 2048
-        buf := make([]byte, chunkSize)
+        buf := make([]byte, 2048)
 
         for {
             n, err := f.Read(buf)
