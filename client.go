@@ -1,3 +1,4 @@
+// Package gogrpcft provides files transferring services via gRPC.
 package gogrpcft
 
 import (
