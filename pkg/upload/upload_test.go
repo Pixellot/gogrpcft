@@ -10,7 +10,7 @@ import (
     "bytes"
 )
 
-func TestDownload(t *testing.T) {
+func TestUpload(t *testing.T) {
 
     // Create a temp file for the test
     content := make([]byte, 2048 * 1024 + 1024)
