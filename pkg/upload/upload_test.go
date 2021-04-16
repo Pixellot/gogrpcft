@@ -27,12 +27,11 @@ func TestDownload(t *testing.T) {
 	}
 
     // Run server
-    serverErrch := make(chan error)
     serverCtx, serverCtxCancel := context.WithTimeout(context.Background(), time.Second * 2)
     defer serverCtxCancel()
     server := NewServer(serverCtx, "127.0.0.1:50001")
     go func() {
-        serverErrch <- server.Start()
+        server.Start()
         defer server.Stop()
     }()
 
@@ -42,10 +41,6 @@ func TestDownload(t *testing.T) {
     uploadPath := filepath.Join(tmpDir, "upload_tempfile")
     if err := RunClient(clientCtx, "127.0.0.1:50001", srcPath, uploadPath); err != nil {
         t.Fatalf("client failed: %v", err)
-    }
-
-    if err := <-serverErrch; err != nil {
-        t.Fatalf("server failed: %v", err)
     }
 
     // Compare remote and downloaded files

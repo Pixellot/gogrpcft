@@ -5,6 +5,7 @@ import (
     "fmt"
     "io"
     "os"
+    "time"
 
     "google.golang.org/grpc"
 
@@ -29,7 +30,7 @@ func RunClient(ctx context.Context, address, src, remote string) error {
         return fmt.Errorf("file is empty: %s", src)
     }
 
-    conn, err := grpc.Dial(address, grpc.WithInsecure())
+    conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(time.Minute))
     if err != nil {
         return fmt.Errorf("gRPC connect failed: %v", err)
     }

@@ -22,7 +22,6 @@ const (
 type Server struct {
     pb.UnimplementedFilesTransferServer
 
-    sentErr chan error
     ctx context.Context
     address string
 
@@ -31,7 +30,7 @@ type Server struct {
 
 // NewServer returns new Server.
 func NewServer(ctx context.Context, address string) *Server {
-    return &Server{ctx: ctx, address: address, sentErr: make(chan error)}
+    return &Server{ctx: ctx, address: address}
 }
 
 func (s *Server) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServer) error {
@@ -39,24 +38,20 @@ func (s *Server) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServe
     info, err := os.Stat(in.Path)
     if os.IsNotExist(err) {
         errMsg := fmt.Sprintf("path not found: %s", in.Path)
-        s.sentErr <- fmt.Errorf(errMsg)
         return status.Errorf(codes.FailedPrecondition, errMsg)
     }
     if info.IsDir() {
         errMsg := fmt.Sprintf("unable to download directory: %s", in.Path)
-        s.sentErr <- fmt.Errorf(errMsg)
         return status.Errorf(codes.FailedPrecondition, errMsg)
     }
     if info.Size() == 0 {
         errMsg := fmt.Sprintf("file is empty: %s", in.Path)
-        s.sentErr <- fmt.Errorf(errMsg)
         return status.Errorf(codes.FailedPrecondition, errMsg)
     }
 
 	f, err := os.Open(in.Path)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to open file %s: %v", in.Path, err)
-        s.sentErr <- fmt.Errorf(errMsg)
         return status.Errorf(codes.FailedPrecondition, errMsg)
 	}
 	defer f.Close()
@@ -70,19 +65,16 @@ func (s *Server) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServe
         }
         if err != nil {
             errMsg := fmt.Sprintf("failed to read chunk: %v", err)
-            s.sentErr <- fmt.Errorf(errMsg)
             return status.Errorf(codes.Internal, errMsg)
         }
 
         buf = buf[:n]
         if err := stream.Send(&pb.Chunk{Data: buf}); err != nil {
             errMsg := fmt.Sprintf("failed to send chunk: %v", err)
-            s.sentErr <- fmt.Errorf(errMsg)
             return status.Errorf(codes.Internal, errMsg)
         }
 	}
 
-    s.sentErr <- nil
     return nil
 }
 
@@ -101,8 +93,6 @@ func (s *Server) Start() error {
     }()
 
     select {
-    case err := <-s.sentErr:
-        return err
     case <-s.ctx.Done():
         return s.ctx.Err()
     }

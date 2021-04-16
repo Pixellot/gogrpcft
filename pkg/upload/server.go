@@ -18,7 +18,6 @@ import (
 type Server struct {
     pb.UnimplementedFilesTransferServer
 
-    sentErr chan error
     ctx context.Context
     address string
 
@@ -27,7 +26,7 @@ type Server struct {
 
 // NewServer returns new Server.
 func NewServer(ctx context.Context, address string) *Server {
-    return &Server{ctx: ctx, address: address, sentErr: make(chan error)}
+    return &Server{ctx: ctx, address: address}
 }
 
 func getData(packet *pb.Packet) ([]byte, error) {
@@ -57,7 +56,6 @@ func (s *Server) Upload(stream pb.FilesTransfer_UploadServer) error {
     packet, err := stream.Recv()
     if err != nil {
         errMsg := fmt.Sprintf("failed to receive first packet")
-        s.sentErr <- fmt.Errorf(errMsg)
         return status.Errorf(codes.Internal, errMsg)
     }
 
@@ -67,7 +65,6 @@ func (s *Server) Upload(stream pb.FilesTransfer_UploadServer) error {
             Success: false,
             Msg: "first packet is not file info",
         })
-        s.sentErr <- nil
         return nil
     }
 
@@ -77,7 +74,6 @@ func (s *Server) Upload(stream pb.FilesTransfer_UploadServer) error {
             Success: false,
             Msg: fmt.Sprintf("failed to create file %s: %v", dst, err),
         })
-        s.sentErr <- nil
         return nil
     }
     defer f.Close()
@@ -89,7 +85,6 @@ func (s *Server) Upload(stream pb.FilesTransfer_UploadServer) error {
         }
         if err != nil {
             errMsg := fmt.Sprintf("gRPC failed to receive: %v", err)
-            s.sentErr <- fmt.Errorf(errMsg)
             return status.Errorf(codes.Internal, errMsg)
         }
 
@@ -99,14 +94,12 @@ func (s *Server) Upload(stream pb.FilesTransfer_UploadServer) error {
                 Success: false,
                 Msg: "received packet is not chuck",
             })
-            s.sentErr <- nil
             return nil
         }
         size := len(data)
 
         if _, err := f.Write(data[:size]); err != nil {
             errMsg := fmt.Sprintf("failed to write chunk: %v", err)
-            s.sentErr <- fmt.Errorf(errMsg)
             return status.Errorf(codes.Internal, errMsg)
         }
     }
@@ -115,7 +108,6 @@ func (s *Server) Upload(stream pb.FilesTransfer_UploadServer) error {
         Success: true,
         Msg: fmt.Sprintf("file upload succeeded: %s", dst),
     })
-    s.sentErr <- nil
     return nil
 }
 
@@ -134,8 +126,6 @@ func (s *Server) Start() error {
     }()
 
     select {
-    case err := <-s.sentErr:
-        return err
     case <-s.ctx.Done():
         return s.ctx.Err()
     }

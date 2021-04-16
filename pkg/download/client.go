@@ -5,6 +5,7 @@ import (
     "fmt"
     "io"
     "os"
+    "time"
 
     "google.golang.org/grpc"
 
@@ -14,7 +15,7 @@ import (
 // RunClient downloads a file from remote to dst via address.
 func RunClient(ctx context.Context, address, remote, dst string) error {
 
-    conn, err := grpc.Dial(address, grpc.WithInsecure())
+    conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithTimeout(time.Minute))
     if err != nil {
         return fmt.Errorf("gRPC connect failed: %v", err)
     }
