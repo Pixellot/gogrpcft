@@ -4,6 +4,7 @@ import (
     "fmt"
     "os"
     "io"
+    "context"
 
     "google.golang.org/grpc"
     "google.golang.org/grpc/codes"
@@ -24,6 +25,10 @@ type filesTransferServer struct {
 // Download is the file download implementation of the files transferring service.
 // comment: should not be used directly.
 func (s *filesTransferServer) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServer) error {
+
+    if stream.Context().Err() == context.Canceled {
+        return status.Errorf(codes.Canceled, "client cancelled, abandoning")
+    }
 
     info, err := os.Stat(in.Path)
     if os.IsNotExist(err) {
@@ -72,6 +77,10 @@ func (s *filesTransferServer) Download(in *pb.FileInfo, stream pb.FilesTransfer_
 // Upload is the file upload implementation of the files transferring service.
 // comment: should not be used directly.
 func (s *filesTransferServer) Upload(stream pb.FilesTransfer_UploadServer) error {
+
+    if stream.Context().Err() == context.Canceled {
+        return status.Errorf(codes.Canceled, "client cancelled, abandoning")
+    }
 
     packet, err := stream.Recv()
     if err != nil {
