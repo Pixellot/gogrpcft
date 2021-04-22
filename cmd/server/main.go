@@ -20,7 +20,8 @@ func main() {
     }
 
     s := grpc.NewServer()
-    ft.RegisterFilesTransferServer(s)
+    service := &ft.FilesTransferServer{}
+    service.Register(s)
     if err := s.Serve(lis); err != nil {
         log.Fatalf("failed to serve: %v", err)
     }

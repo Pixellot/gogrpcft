@@ -13,18 +13,18 @@ import (
     pb "github.com/oren12321/gogrpcft/v2/internal/proto"
 )
 
-// RegisterFilesTransferServer registers a files transferring service to a given gRPC server.
-func RegisterFilesTransferServer(server *grpc.Server) {
-    pb.RegisterTransferServer(server, &filesTransferServer{})
+type FilesTransferServer struct {
+    pb.UnimplementedTransferServer
 }
 
-type filesTransferServer struct {
-    pb.UnimplementedTransferServer
+// Register registers a files transferring service to a given gRPC server.
+func (s *FilesTransferServer) Register(server *grpc.Server) {
+    pb.RegisterTransferServer(server, s)
 }
 
 // Receive is the file download implementation of the files transferring service.
 // comment: should not be used directly.
-func (s *filesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveServer) error {
+func (s *FilesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveServer) error {
 
     if stream.Context().Err() == context.Canceled {
         return status.Errorf(codes.Canceled, "client cancelled, abandoning")
@@ -76,7 +76,7 @@ func (s *filesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveSer
 
 // Send is the file upload implementation of the files transferring service.
 // comment: should not be used directly.
-func (s *filesTransferServer) Send(stream pb.Transfer_SendServer) error {
+func (s *FilesTransferServer) Send(stream pb.Transfer_SendServer) error {
 
     if stream.Context().Err() == context.Canceled {
         return status.Errorf(codes.Canceled, "client cancelled, abandoning")
@@ -141,20 +141,20 @@ func (s *filesTransferServer) Send(stream pb.Transfer_SendServer) error {
 }
 
 
-// RegisterBytesTransferServer registers a bytes transferring service to a given gRPC server.
-func RegisterBytesTransferServer(server *grpc.Server) {
-    pb.RegisterTransferServer(server, &bytesTransferServer{})
+func (s *BytesTransferServer) SetBytesStreamer(streamer BytesStreamer) {
+    s.streamer = streamer
 }
 
-func SetBytesTransferServerStreamer(server *bytesTransferServer, streamer BytesStreamer) {
-    server.streamer = streamer
+func (s *BytesTransferServer) SetBytesReceiver(receiver BytesReceiver) {
+    s.receiver = receiver
 }
 
-func SetBytesTransferServerReceiver(server *bytesTransferServer, receiver BytesReceiver) {
-    server.receiver = receiver
+// Register registers a bytes transferring service to a given gRPC server.
+func (s *BytesTransferServer) Register(server *grpc.Server) {
+    pb.RegisterTransferServer(server, s)
 }
 
-type bytesTransferServer struct {
+type BytesTransferServer struct {
     pb.UnimplementedTransferServer
 
     streamer BytesStreamer
@@ -163,7 +163,7 @@ type bytesTransferServer struct {
 
 // Receive is the file download implementation of the bytes transferring service.
 // comment: should not be used directly.
-func (s *bytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveServer) error {
+func (s *BytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveServer) error {
 
     if stream.Context().Err() == context.Canceled {
         return status.Errorf(codes.Canceled, "client cancelled, abandoning")
@@ -199,7 +199,7 @@ func (s *bytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveSer
 
 // Send is the file upload implementation of the bytes transferring service.
 // comment: should not be used directly.
-func (s *bytesTransferServer) Send(stream pb.Transfer_SendServer) error {
+func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) error {
 
     if stream.Context().Err() == context.Canceled {
         return status.Errorf(codes.Canceled, "client cancelled, abandoning")
