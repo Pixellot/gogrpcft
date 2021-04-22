@@ -13,15 +13,15 @@ import (
 )
 
 // CreateFilesTransferClient returns gRPC client given a connection.
-func CreateFilesTransferClient(conn *grpc.ClientConn) pb.FilesTransferClient {
-    return pb.NewFilesTransferClient(conn)
+func CreateTransferClient(conn *grpc.ClientConn) pb.TransferClient {
+    return pb.NewTransferClient(conn)
 }
 
 // DownloadFile downloads a file from destination to source.
-func DownloadFile(client pb.FilesTransferClient, ctx context.Context, from, to string) error {
+func DownloadFile(client pb.TransferClient, ctx context.Context, from, to string) error {
 
-    req := &pb.FileInfo{Path: from}
-    stream, err := client.Download(ctx, req)
+    req := &pb.Info{Msg: from}
+    stream, err := client.Receive(ctx, req)
     if err != nil {
         return fmt.Errorf("gRPC stream fetch failed: %v", err)
     }
@@ -64,7 +64,7 @@ func DownloadFile(client pb.FilesTransferClient, ctx context.Context, from, to s
 }
 
 // UploadFile uploads file from srouce to destination.
-func UploadFile(client pb.FilesTransferClient, ctx context.Context, from, to string) error {
+func UploadFile(client pb.TransferClient, ctx context.Context, from, to string) error {
 
     info, err := os.Stat(from)
     if os.IsNotExist(err) {
@@ -77,15 +77,15 @@ func UploadFile(client pb.FilesTransferClient, ctx context.Context, from, to str
         return fmt.Errorf("file is empty: %s", from)
     }
 
-    stream, err := client.Upload(ctx)
+    stream, err := client.Send(ctx)
     if err != nil {
         return fmt.Errorf("gRPC stream fetch failed: %v", err)
     }
 
     req := &pb.Packet{
-        PacketOptions: &pb.Packet_FileInfo{
-            FileInfo: &pb.FileInfo{
-                Path: to,
+        PacketOptions: &pb.Packet_Info{
+            Info: &pb.Info{
+                Msg: to,
             },
         },
     }
@@ -135,7 +135,7 @@ func UploadFile(client pb.FilesTransferClient, ctx context.Context, from, to str
         if err != nil {
             errch <- fmt.Errorf("failed to close and receive status: %v", err)
         } else if !res.Success {
-            errch <- fmt.Errorf("bad response from server: %s", res.Msg)
+            errch <- fmt.Errorf("bad response from server: %s", res.Desc)
         } else {
             errch <- nil
         }
@@ -148,3 +148,4 @@ func UploadFile(client pb.FilesTransferClient, ctx context.Context, from, to str
         return ctx.Err()
     }
 }
+

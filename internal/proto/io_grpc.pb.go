@@ -14,28 +14,28 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// FilesTransferClient is the client API for FilesTransfer service.
+// TransferClient is the client API for Transfer service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type FilesTransferClient interface {
-	Download(ctx context.Context, in *FileInfo, opts ...grpc.CallOption) (FilesTransfer_DownloadClient, error)
-	Upload(ctx context.Context, opts ...grpc.CallOption) (FilesTransfer_UploadClient, error)
+type TransferClient interface {
+	Receive(ctx context.Context, in *Info, opts ...grpc.CallOption) (Transfer_ReceiveClient, error)
+	Send(ctx context.Context, opts ...grpc.CallOption) (Transfer_SendClient, error)
 }
 
-type filesTransferClient struct {
+type transferClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewFilesTransferClient(cc grpc.ClientConnInterface) FilesTransferClient {
-	return &filesTransferClient{cc}
+func NewTransferClient(cc grpc.ClientConnInterface) TransferClient {
+	return &transferClient{cc}
 }
 
-func (c *filesTransferClient) Download(ctx context.Context, in *FileInfo, opts ...grpc.CallOption) (FilesTransfer_DownloadClient, error) {
-	stream, err := c.cc.NewStream(ctx, &FilesTransfer_ServiceDesc.Streams[0], "/Io.FilesTransfer/Download", opts...)
+func (c *transferClient) Receive(ctx context.Context, in *Info, opts ...grpc.CallOption) (Transfer_ReceiveClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Transfer_ServiceDesc.Streams[0], "/Io.Transfer/Receive", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &filesTransferDownloadClient{stream}
+	x := &transferReceiveClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -45,16 +45,16 @@ func (c *filesTransferClient) Download(ctx context.Context, in *FileInfo, opts .
 	return x, nil
 }
 
-type FilesTransfer_DownloadClient interface {
+type Transfer_ReceiveClient interface {
 	Recv() (*Chunk, error)
 	grpc.ClientStream
 }
 
-type filesTransferDownloadClient struct {
+type transferReceiveClient struct {
 	grpc.ClientStream
 }
 
-func (x *filesTransferDownloadClient) Recv() (*Chunk, error) {
+func (x *transferReceiveClient) Recv() (*Chunk, error) {
 	m := new(Chunk)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -62,30 +62,30 @@ func (x *filesTransferDownloadClient) Recv() (*Chunk, error) {
 	return m, nil
 }
 
-func (c *filesTransferClient) Upload(ctx context.Context, opts ...grpc.CallOption) (FilesTransfer_UploadClient, error) {
-	stream, err := c.cc.NewStream(ctx, &FilesTransfer_ServiceDesc.Streams[1], "/Io.FilesTransfer/Upload", opts...)
+func (c *transferClient) Send(ctx context.Context, opts ...grpc.CallOption) (Transfer_SendClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Transfer_ServiceDesc.Streams[1], "/Io.Transfer/Send", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &filesTransferUploadClient{stream}
+	x := &transferSendClient{stream}
 	return x, nil
 }
 
-type FilesTransfer_UploadClient interface {
+type Transfer_SendClient interface {
 	Send(*Packet) error
 	CloseAndRecv() (*Status, error)
 	grpc.ClientStream
 }
 
-type filesTransferUploadClient struct {
+type transferSendClient struct {
 	grpc.ClientStream
 }
 
-func (x *filesTransferUploadClient) Send(m *Packet) error {
+func (x *transferSendClient) Send(m *Packet) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *filesTransferUploadClient) CloseAndRecv() (*Status, error) {
+func (x *transferSendClient) CloseAndRecv() (*Status, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
@@ -96,78 +96,78 @@ func (x *filesTransferUploadClient) CloseAndRecv() (*Status, error) {
 	return m, nil
 }
 
-// FilesTransferServer is the server API for FilesTransfer service.
-// All implementations must embed UnimplementedFilesTransferServer
+// TransferServer is the server API for Transfer service.
+// All implementations must embed UnimplementedTransferServer
 // for forward compatibility
-type FilesTransferServer interface {
-	Download(*FileInfo, FilesTransfer_DownloadServer) error
-	Upload(FilesTransfer_UploadServer) error
-	mustEmbedUnimplementedFilesTransferServer()
+type TransferServer interface {
+	Receive(*Info, Transfer_ReceiveServer) error
+	Send(Transfer_SendServer) error
+	mustEmbedUnimplementedTransferServer()
 }
 
-// UnimplementedFilesTransferServer must be embedded to have forward compatible implementations.
-type UnimplementedFilesTransferServer struct {
+// UnimplementedTransferServer must be embedded to have forward compatible implementations.
+type UnimplementedTransferServer struct {
 }
 
-func (UnimplementedFilesTransferServer) Download(*FileInfo, FilesTransfer_DownloadServer) error {
-	return status.Errorf(codes.Unimplemented, "method Download not implemented")
+func (UnimplementedTransferServer) Receive(*Info, Transfer_ReceiveServer) error {
+	return status.Errorf(codes.Unimplemented, "method Receive not implemented")
 }
-func (UnimplementedFilesTransferServer) Upload(FilesTransfer_UploadServer) error {
-	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
+func (UnimplementedTransferServer) Send(Transfer_SendServer) error {
+	return status.Errorf(codes.Unimplemented, "method Send not implemented")
 }
-func (UnimplementedFilesTransferServer) mustEmbedUnimplementedFilesTransferServer() {}
+func (UnimplementedTransferServer) mustEmbedUnimplementedTransferServer() {}
 
-// UnsafeFilesTransferServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to FilesTransferServer will
+// UnsafeTransferServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TransferServer will
 // result in compilation errors.
-type UnsafeFilesTransferServer interface {
-	mustEmbedUnimplementedFilesTransferServer()
+type UnsafeTransferServer interface {
+	mustEmbedUnimplementedTransferServer()
 }
 
-func RegisterFilesTransferServer(s grpc.ServiceRegistrar, srv FilesTransferServer) {
-	s.RegisterService(&FilesTransfer_ServiceDesc, srv)
+func RegisterTransferServer(s grpc.ServiceRegistrar, srv TransferServer) {
+	s.RegisterService(&Transfer_ServiceDesc, srv)
 }
 
-func _FilesTransfer_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(FileInfo)
+func _Transfer_Receive_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Info)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(FilesTransferServer).Download(m, &filesTransferDownloadServer{stream})
+	return srv.(TransferServer).Receive(m, &transferReceiveServer{stream})
 }
 
-type FilesTransfer_DownloadServer interface {
+type Transfer_ReceiveServer interface {
 	Send(*Chunk) error
 	grpc.ServerStream
 }
 
-type filesTransferDownloadServer struct {
+type transferReceiveServer struct {
 	grpc.ServerStream
 }
 
-func (x *filesTransferDownloadServer) Send(m *Chunk) error {
+func (x *transferReceiveServer) Send(m *Chunk) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _FilesTransfer_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(FilesTransferServer).Upload(&filesTransferUploadServer{stream})
+func _Transfer_Send_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(TransferServer).Send(&transferSendServer{stream})
 }
 
-type FilesTransfer_UploadServer interface {
+type Transfer_SendServer interface {
 	SendAndClose(*Status) error
 	Recv() (*Packet, error)
 	grpc.ServerStream
 }
 
-type filesTransferUploadServer struct {
+type transferSendServer struct {
 	grpc.ServerStream
 }
 
-func (x *filesTransferUploadServer) SendAndClose(m *Status) error {
+func (x *transferSendServer) SendAndClose(m *Status) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *filesTransferUploadServer) Recv() (*Packet, error) {
+func (x *transferSendServer) Recv() (*Packet, error) {
 	m := new(Packet)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -175,22 +175,22 @@ func (x *filesTransferUploadServer) Recv() (*Packet, error) {
 	return m, nil
 }
 
-// FilesTransfer_ServiceDesc is the grpc.ServiceDesc for FilesTransfer service.
+// Transfer_ServiceDesc is the grpc.ServiceDesc for Transfer service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var FilesTransfer_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Io.FilesTransfer",
-	HandlerType: (*FilesTransferServer)(nil),
+var Transfer_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "Io.Transfer",
+	HandlerType: (*TransferServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Download",
-			Handler:       _FilesTransfer_Download_Handler,
+			StreamName:    "Receive",
+			Handler:       _Transfer_Receive_Handler,
 			ServerStreams: true,
 		},
 		{
-			StreamName:    "Upload",
-			Handler:       _FilesTransfer_Upload_Handler,
+			StreamName:    "Send",
+			Handler:       _Transfer_Send_Handler,
 			ClientStreams: true,
 		},
 	},

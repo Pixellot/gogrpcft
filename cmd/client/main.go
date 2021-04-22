@@ -34,7 +34,7 @@ func main() {
         downloadCmd.Parse(os.Args[2:])
         conn := dial(*downloadAddress)
         defer conn.Close()
-        c := ft.CreateFilesTransferClient(conn)
+        c := ft.CreateTransferClient(conn)
         if err := ft.DownloadFile(c, context.Background(), *downloadFrom, *downloadTo); err != nil {
             log.Fatalf("client failed: %v", err)
         }
@@ -42,7 +42,7 @@ func main() {
         uploadCmd.Parse(os.Args[2:])
         conn := dial(*uploadAddress)
         defer conn.Close()
-        c := ft.CreateFilesTransferClient(conn)
+        c := ft.CreateTransferClient(conn)
         if err := ft.UploadFile(c, context.Background(), *uploadFrom, *uploadTo); err != nil {
             log.Fatalf("client failed: %v", err)
         }

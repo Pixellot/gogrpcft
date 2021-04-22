@@ -40,7 +40,7 @@ func TestUploadFile(t *testing.T) {
         t.Fatalf("gRPC connect failed: %v", err)
     }
     defer conn.Close()
-    client := CreateFilesTransferClient(conn)
+    client := CreateTransferClient(conn)
 
     t.Run("successful download", func(t *testing.T) {
 
@@ -92,7 +92,7 @@ func TestDownloadFile(t *testing.T) {
         t.Fatalf("gRPC connect failed: %v", err)
     }
     defer conn.Close()
-    client := CreateFilesTransferClient(conn)
+    client := CreateTransferClient(conn)
 
     t.Run("successful download", func(t *testing.T) {
 

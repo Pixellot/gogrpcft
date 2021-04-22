@@ -15,38 +15,38 @@ import (
 
 // RegisterFilesTransferServer registers a files transferring service to a given gRPC server.
 func RegisterFilesTransferServer(server *grpc.Server) {
-    pb.RegisterFilesTransferServer(server, &filesTransferServer{})
+    pb.RegisterTransferServer(server, &filesTransferServer{})
 }
 
 type filesTransferServer struct {
-    pb.UnimplementedFilesTransferServer
+    pb.UnimplementedTransferServer
 }
 
 // Download is the file download implementation of the files transferring service.
 // comment: should not be used directly.
-func (s *filesTransferServer) Download(in *pb.FileInfo, stream pb.FilesTransfer_DownloadServer) error {
+func (s *filesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveServer) error {
 
     if stream.Context().Err() == context.Canceled {
         return status.Errorf(codes.Canceled, "client cancelled, abandoning")
     }
 
-    info, err := os.Stat(in.Path)
+    info, err := os.Stat(in.Msg)
     if os.IsNotExist(err) {
-        errMsg := fmt.Sprintf("path not found: %s", in.Path)
+        errMsg := fmt.Sprintf("path not found: %s", in.Msg)
         return status.Errorf(codes.FailedPrecondition, errMsg)
     }
     if info.IsDir() {
-        errMsg := fmt.Sprintf("unable to download directory: %s", in.Path)
+        errMsg := fmt.Sprintf("unable to download directory: %s", in.Msg)
         return status.Errorf(codes.FailedPrecondition, errMsg)
     }
     if info.Size() == 0 {
-        errMsg := fmt.Sprintf("file is empty: %s", in.Path)
+        errMsg := fmt.Sprintf("file is empty: %s", in.Msg)
         return status.Errorf(codes.FailedPrecondition, errMsg)
     }
 
-	f, err := os.Open(in.Path)
+	f, err := os.Open(in.Msg)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to open file %s: %v", in.Path, err)
+		errMsg := fmt.Sprintf("failed to open file %s: %v", in.Msg, err)
         return status.Errorf(codes.FailedPrecondition, errMsg)
 	}
 	defer f.Close()
@@ -76,7 +76,7 @@ func (s *filesTransferServer) Download(in *pb.FileInfo, stream pb.FilesTransfer_
 
 // Upload is the file upload implementation of the files transferring service.
 // comment: should not be used directly.
-func (s *filesTransferServer) Upload(stream pb.FilesTransfer_UploadServer) error {
+func (s *filesTransferServer) Send(stream pb.Transfer_SendServer) error {
 
     if stream.Context().Err() == context.Canceled {
         return status.Errorf(codes.Canceled, "client cancelled, abandoning")
@@ -92,7 +92,7 @@ func (s *filesTransferServer) Upload(stream pb.FilesTransfer_UploadServer) error
     if err != nil {
         stream.SendAndClose(&pb.Status{
             Success: false,
-            Msg: "first packet is not file info",
+            Desc: "first packet is not file info",
         })
         return nil
     }
@@ -101,7 +101,7 @@ func (s *filesTransferServer) Upload(stream pb.FilesTransfer_UploadServer) error
     if err != nil {
         stream.SendAndClose(&pb.Status{
             Success: false,
-            Msg: fmt.Sprintf("failed to create file %s: %v", dst, err),
+            Desc: fmt.Sprintf("failed to create file %s: %v", dst, err),
         })
         return nil
     }
@@ -121,7 +121,7 @@ func (s *filesTransferServer) Upload(stream pb.FilesTransfer_UploadServer) error
         if err != nil {
             stream.SendAndClose(&pb.Status{
                 Success: false,
-                Msg: "received packet is not chuck",
+                Desc: "received packet is not chuck",
             })
             return nil
         }
@@ -135,15 +135,15 @@ func (s *filesTransferServer) Upload(stream pb.FilesTransfer_UploadServer) error
 
     stream.SendAndClose(&pb.Status{
         Success: true,
-        Msg: fmt.Sprintf("file upload succeeded: %s", dst),
+        Desc: fmt.Sprintf("file upload succeeded: %s", dst),
     })
     return nil
 }
 
 func getData(packet *pb.Packet) ([]byte, error) {
     switch x := packet.PacketOptions.(type) {
-    case *pb.Packet_FileInfo:
-        return nil, fmt.Errorf("not a file info packat")
+    case *pb.Packet_Info:
+        return nil, fmt.Errorf("not a info packat")
     case *pb.Packet_Chunk:
         return x.Chunk.Data, nil
     default:
@@ -153,8 +153,8 @@ func getData(packet *pb.Packet) ([]byte, error) {
 
 func getPath(packet *pb.Packet) (string, error) {
     switch x := packet.PacketOptions.(type) {
-    case *pb.Packet_FileInfo:
-        return x.FileInfo.Path, nil
+    case *pb.Packet_Info:
+        return x.Info.Msg, nil
     case *pb.Packet_Chunk:
         return "", fmt.Errorf("not a chunk packet")
     default:
