@@ -12,32 +12,35 @@ import (
 
     "google.golang.org/grpc"
     "google.golang.org/grpc/test/bufconn"
+
+    "github.com/oren12321/gogrpcft/v2/streamer"
+    "github.com/oren12321/gogrpcft/v2/receiver"
 )
 
-var ftlis *bufconn.Listener
-var fts *FilesTransferServer
+var lis *bufconn.Listener
+var bts *BytesTransferServer
 
 func init() {
-    ftlis = bufconn.Listen(1024 * 1024)
+    lis = bufconn.Listen(1024 * 1024)
     s := grpc.NewServer()
-    fts = &FilesTransferServer{}
-    fts.Register(s)
+    bts = &BytesTransferServer{}
+    bts.Register(s)
     go func() {
-        if err := s.Serve(ftlis); err != nil {
+        if err := s.Serve(lis); err != nil {
             log.Fatalf("failed to listen: %v", err)
         }
     }()
 }
 
-func ftdialer(context.Context, string) (net.Conn, error) {
-    return ftlis.Dial()
+func dialer(context.Context, string) (net.Conn, error) {
+    return lis.Dial()
 }
 
-func TestUploadFile(t *testing.T) {
+func TestFileUpload(t *testing.T) {
 
-    // Create the files transfer client
+    // Create the bytes transfer client
 
-    conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(ftdialer), grpc.WithInsecure())
+    conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(dialer), grpc.WithInsecure())
     if err != nil {
         t.Fatalf("gRPC connect failed: %v", err)
     }
@@ -46,7 +49,7 @@ func TestUploadFile(t *testing.T) {
 
     t.Run("successful download", func(t *testing.T) {
 
-        // Create a temp file and upload dest
+        // Create a temp file and upload test
 
         content := make([]byte, 2048 * 1024 + 1024)
 
@@ -63,9 +66,16 @@ func TestUploadFile(t *testing.T) {
 
         uploadPath := filepath.Join(tmpDir, "upload_tempfile")
 
+        // Create receiver/streamer
+
+        fr := &receiver.FileReceiver{}
+        bts.SetBytesReceiver(fr)
+
+        fs := &streamer.FileStreamer{}
+
         // Perform upload
 
-        if err := UploadFile(client, context.Background(), srcPath, uploadPath); err != nil {
+        if err := UploadBytes(client, context.Background(), srcPath, uploadPath, fs); err != nil {
             t.Fatalf("client failed: %v", err)
         }
 
@@ -85,11 +95,11 @@ func TestUploadFile(t *testing.T) {
     })
 }
 
-func TestDownloadFile(t *testing.T) {
+func TestFileDownload(t *testing.T) {
 
-    // Create the files transfer client
+    // Create the bytes transfer client
 
-    conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(ftdialer), grpc.WithInsecure())
+    conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(dialer), grpc.WithInsecure())
     if err != nil {
         t.Fatalf("gRPC connect failed: %v", err)
     }
@@ -115,9 +125,16 @@ func TestDownloadFile(t *testing.T) {
 
         dstPath := filepath.Join(tmpDir, "dst_tempfile")
 
+        // Create receiver/streamer
+
+        fs := &streamer.FileStreamer{}
+
+        fr := &receiver.FileReceiver{}
+        bts.SetBytesStreamer(fs)
+
         // Perform download
 
-        if err := DownloadFile(client, context.Background(), remotePath, dstPath); err != nil {
+        if err := DownloadBytes(client, context.Background(), remotePath, dstPath, fr); err != nil {
             t.Fatalf("client failed: %v", err)
         }
 

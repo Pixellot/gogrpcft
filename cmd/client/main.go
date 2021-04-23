@@ -10,6 +10,8 @@ import (
     "google.golang.org/grpc"
 
     ft "github.com/oren12321/gogrpcft/v2"
+    "github.com/oren12321/gogrpcft/v2/receiver"
+    "github.com/oren12321/gogrpcft/v2/streamer"
 )
 
 func main() {
@@ -37,7 +39,7 @@ func main() {
         conn := dial(*downloadAddress)
         defer conn.Close()
         c := ft.CreateTransferClient(conn)
-        if err := ft.DownloadFile(c, context.Background(), *downloadFrom, *downloadTo); err != nil {
+        if err := ft.DownloadBytes(c, context.Background(), *downloadFrom, *downloadTo, &receiver.FileReceiver{}); err != nil {
             log.Fatalf("client failed: %v", err)
         }
     case "upload":
@@ -45,7 +47,7 @@ func main() {
         conn := dial(*uploadAddress)
         defer conn.Close()
         c := ft.CreateTransferClient(conn)
-        if err := ft.UploadFile(c, context.Background(), *uploadFrom, *uploadTo); err != nil {
+        if err := ft.UploadBytes(c, context.Background(), *uploadFrom, *uploadTo, &streamer.FileStreamer{}); err != nil {
             log.Fatalf("client failed: %v", err)
         }
     default:
