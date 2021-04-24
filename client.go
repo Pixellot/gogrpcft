@@ -8,6 +8,9 @@ import (
 
     "google.golang.org/grpc"
 
+    "google.golang.org/protobuf/proto"
+    "google.golang.org/protobuf/types/known/anypb"
+
     pb "github.com/oren12321/gogrpcft/v2/internal/proto"
 )
 
@@ -17,9 +20,17 @@ func CreateTransferClient(conn *grpc.ClientConn) pb.TransferClient {
 }
 
 // DownloadBytes downloads bytes from destination to source.
-func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMsg string, receiver BytesReceiver) error {
+func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMsg proto.Message, receiver BytesReceiver) error {
 
-    req := &pb.Info{Msg: streamerMsg}
+    any, err := anypb.New(streamerMsg)
+    if err != nil {
+        return fmt.Errorf("failed to create any: %v", err)
+    }
+
+    req := &pb.Info{
+        Msg: any,
+    }
+
     stream, err := client.Receive(ctx, req)
     if err != nil {
         return fmt.Errorf("gRPC stream fetch failed: %v", err)
@@ -69,7 +80,7 @@ func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, r
 }
 
 // UploadBytes uploads bytes from srouce to destination.
-func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMsg string, streamer BytesStreamer) error {
+func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMsg proto.Message, streamer BytesStreamer) error {
 
     stream, err := client.Send(ctx)
     if err != nil {
@@ -84,13 +95,19 @@ func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, rec
         return fmt.Errorf("streamer init failed")
     }
 
+    any, err := anypb.New(receiverMsg)
+    if err != nil {
+        return fmt.Errorf("failed to create any: %v", err)
+    }
+
     req := &pb.Packet{
         PacketOptions: &pb.Packet_Info{
             Info: &pb.Info{
-                Msg: receiverMsg,
+                Msg: any,
             },
         },
     }
+
     if err := stream.Send(req); err != nil {
         return fmt.Errorf("failed to send packet path info: %v", err)
     }

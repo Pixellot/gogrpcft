@@ -13,8 +13,8 @@ import (
     "google.golang.org/grpc"
     "google.golang.org/grpc/test/bufconn"
 
-    "github.com/oren12321/gogrpcft/v2/streamer"
-    "github.com/oren12321/gogrpcft/v2/receiver"
+    pb "github.com/oren12321/gogrpcft/v2/interface/file/proto"
+    fi "github.com/oren12321/gogrpcft/v2/interface/file"
 )
 
 var lis *bufconn.Listener
@@ -68,14 +68,17 @@ func TestFileUpload(t *testing.T) {
 
         // Create receiver/streamer
 
-        fr := &receiver.FileReceiver{}
+        fr := &fi.FileReceiver{}
         bts.SetBytesReceiver(fr)
 
-        fs := &streamer.FileStreamer{}
+        fs := &fi.FileStreamer{}
 
         // Perform upload
 
-        if err := UploadBytes(client, context.Background(), srcPath, uploadPath, fs); err != nil {
+        fromInfo := &pb.Info{Path: srcPath}
+        toInfo := &pb.Info{Path: uploadPath}
+
+        if err := UploadBytes(client, context.Background(), fromInfo, toInfo, fs); err != nil {
             t.Fatalf("client failed: %v", err)
         }
 
@@ -127,14 +130,17 @@ func TestFileDownload(t *testing.T) {
 
         // Create receiver/streamer
 
-        fs := &streamer.FileStreamer{}
+        fs := &fi.FileStreamer{}
 
-        fr := &receiver.FileReceiver{}
+        fr := &fi.FileReceiver{}
         bts.SetBytesStreamer(fs)
 
         // Perform download
 
-        if err := DownloadBytes(client, context.Background(), remotePath, dstPath, fr); err != nil {
+        fromInfo := &pb.Info{Path: remotePath}
+        toInfo := &pb.Info{Path: dstPath}
+
+        if err := DownloadBytes(client, context.Background(), fromInfo, toInfo, fr); err != nil {
             t.Fatalf("client failed: %v", err)
         }
 

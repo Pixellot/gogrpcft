@@ -8,8 +8,8 @@ import (
     "google.golang.org/grpc"
 
     ft "github.com/oren12321/gogrpcft/v2"
-    "github.com/oren12321/gogrpcft/v2/receiver"
-    "github.com/oren12321/gogrpcft/v2/streamer"
+
+    fi "github.com/oren12321/gogrpcft/v2/interface/file"
 )
 
 func main() {
@@ -26,8 +26,8 @@ func main() {
     s := grpc.NewServer()
     service := &ft.BytesTransferServer{}
     service.Register(s)
-    service.SetBytesReceiver(&receiver.FileReceiver{})
-    service.SetBytesStreamer(&streamer.FileStreamer{})
+    service.SetBytesReceiver(&fi.FileReceiver{})
+    service.SetBytesStreamer(&fi.FileStreamer{})
 
     if err := s.Serve(lis); err != nil {
         log.Fatalf("failed to serve: %v", err)

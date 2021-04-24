@@ -10,8 +10,9 @@ import (
     "google.golang.org/grpc"
 
     ft "github.com/oren12321/gogrpcft/v2"
-    "github.com/oren12321/gogrpcft/v2/receiver"
-    "github.com/oren12321/gogrpcft/v2/streamer"
+
+    pb "github.com/oren12321/gogrpcft/v2/interface/file/proto"
+    fi "github.com/oren12321/gogrpcft/v2/interface/file"
 )
 
 func main() {
@@ -39,7 +40,9 @@ func main() {
         conn := dial(*downloadAddress)
         defer conn.Close()
         c := ft.CreateTransferClient(conn)
-        if err := ft.DownloadBytes(c, context.Background(), *downloadFrom, *downloadTo, &receiver.FileReceiver{}); err != nil {
+        fromInfo := &pb.Info{Path: *downloadFrom}
+        toInfo := &pb.Info{Path: *downloadTo}
+        if err := ft.DownloadBytes(c, context.Background(), fromInfo, toInfo, &fi.FileReceiver{}); err != nil {
             log.Fatalf("client failed: %v", err)
         }
     case "upload":
@@ -47,7 +50,9 @@ func main() {
         conn := dial(*uploadAddress)
         defer conn.Close()
         c := ft.CreateTransferClient(conn)
-        if err := ft.UploadBytes(c, context.Background(), *uploadFrom, *uploadTo, &streamer.FileStreamer{}); err != nil {
+        fromInfo := &pb.Info{Path: *uploadFrom}
+        toInfo := &pb.Info{Path: *uploadTo}
+        if err := ft.UploadBytes(c, context.Background(), fromInfo, toInfo, &fi.FileStreamer{}); err != nil {
             log.Fatalf("client failed: %v", err)
         }
     default:

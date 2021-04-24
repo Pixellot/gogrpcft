@@ -44,7 +44,12 @@ func (s *BytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveSer
         return status.Errorf(codes.FailedPrecondition, "streamer is nil")
     }
 
-    if err := s.streamer.Init(in.Msg); err != nil {
+    streamerMsg, err := in.Msg.UnmarshalNew()
+    if err != nil {
+        return status.Errorf(codes.FailedPrecondition, "unmarshal any failed: %v", err)
+    }
+
+    if err := s.streamer.Init(streamerMsg); err != nil {
         return status.Errorf(codes.FailedPrecondition, "streamer init failed")
     }
 
@@ -86,16 +91,21 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) error {
         return status.Errorf(codes.Internal, errMsg)
     }
 
-    dst, err := getPath(packet)
+    info, err := getInfo(packet)
     if err != nil {
         stream.SendAndClose(&pb.Status{
             Success: false,
-            Desc: "first packet is not file info",
+            Desc: "first packet is not info",
         })
         return nil
     }
 
-    if err := s.receiver.Init(dst); err != nil {
+    receiverMsg, err := info.Msg.UnmarshalNew()
+    if err != nil {
+        return status.Errorf(codes.FailedPrecondition, "unmarshal any failed")
+    }
+
+    if err := s.receiver.Init(receiverMsg); err != nil {
         return status.Errorf(codes.FailedPrecondition, "receiver init failed")
     }
 
@@ -109,7 +119,7 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) error {
             return status.Errorf(codes.Internal, errMsg)
         }
 
-        data, err := getData(packet)
+        chunk, err := getChunk(packet)
         if err != nil {
             stream.SendAndClose(&pb.Status{
                 Success: false,
@@ -117,6 +127,7 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) error {
             })
             return nil
         }
+        data := chunk.Data
         size := len(data)
 
         if err := s.receiver.Push(data[:size]); err != nil {
@@ -131,30 +142,30 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) error {
 
     stream.SendAndClose(&pb.Status{
         Success: true,
-        Desc: fmt.Sprintf("file upload succeeded: %s", dst),
+        Desc: fmt.Sprintf("upload succeeded"),
     })
     return nil
 }
 
 
-func getData(packet *pb.Packet) ([]byte, error) {
+func getChunk(packet *pb.Packet) (*pb.Chunk, error) {
     switch x := packet.PacketOptions.(type) {
     case *pb.Packet_Info:
         return nil, fmt.Errorf("not a info packat")
     case *pb.Packet_Chunk:
-        return x.Chunk.Data, nil
+        return x.Chunk, nil
     default:
         return nil, fmt.Errorf("unknown packat option")
     }
 }
 
-func getPath(packet *pb.Packet) (string, error) {
+func getInfo(packet *pb.Packet) (*pb.Info, error) {
     switch x := packet.PacketOptions.(type) {
     case *pb.Packet_Info:
-        return x.Info.Msg, nil
+        return x.Info, nil
     case *pb.Packet_Chunk:
-        return "", fmt.Errorf("not a chunk packet")
+        return nil, fmt.Errorf("not a chunk packet")
     default:
-        return "", fmt.Errorf("unknown packat option")
+        return nil, fmt.Errorf("unknown packat option")
     }
 }

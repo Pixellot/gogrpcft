@@ -1,14 +1,20 @@
-package receiver
+package file
 
 import (
     "os"
+
+    "google.golang.org/protobuf/proto"
+    pb "github.com/oren12321/gogrpcft/v2/interface/file/proto"
 )
 
 type FileReceiver struct {
     f *os.File
 }
 
-func (fr *FileReceiver) Init(path string) error {
+func (fr *FileReceiver) Init(msg proto.Message) error {
+    info := msg.(*pb.Info)
+    path := info.Path
+
     var err error
     fr.f, err = os.Create(path)
     return err

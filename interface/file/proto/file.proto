@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/oren12321/gogrpcft/v2/interface/file/proto";
+
+message Info {
+    string path = 1;
+}
+

@@ -1,8 +1,11 @@
-package streamer
+package file
 
 import (
     "os"
     "io"
+
+    "google.golang.org/protobuf/proto"
+    pb "github.com/oren12321/gogrpcft/v2/interface/file/proto"
 )
 
 type FileStreamer struct {
@@ -11,7 +14,10 @@ type FileStreamer struct {
     buf []byte
 }
 
-func (fs *FileStreamer) Init(path string) error {
+func (fs *FileStreamer) Init(msg proto.Message) error {
+    info := msg.(*pb.Info)
+    path := info.Path
+
     fs.buf = make([]byte, 2048)
     var err error
     fs.f, err = os.Open(path)
