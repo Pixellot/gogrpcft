@@ -15,7 +15,7 @@ type FileStreamer struct {
 }
 
 func (fs *FileStreamer) Init(msg proto.Message) error {
-    info := msg.(*pb.Info)
+    info := msg.(*pb.File)
     path := info.Path
 
     fs.buf = make([]byte, 2048)

@@ -40,8 +40,8 @@ func main() {
         conn := dial(*downloadAddress)
         defer conn.Close()
         c := ft.CreateTransferClient(conn)
-        fromInfo := &pb.Info{Path: *downloadFrom}
-        toInfo := &pb.Info{Path: *downloadTo}
+        fromInfo := &pb.File{Path: *downloadFrom}
+        toInfo := &pb.File{Path: *downloadTo}
         if err := ft.DownloadBytes(c, context.Background(), fromInfo, toInfo, &fi.FileReceiver{}); err != nil {
             log.Fatalf("client failed: %v", err)
         }
@@ -50,8 +50,8 @@ func main() {
         conn := dial(*uploadAddress)
         defer conn.Close()
         c := ft.CreateTransferClient(conn)
-        fromInfo := &pb.Info{Path: *uploadFrom}
-        toInfo := &pb.Info{Path: *uploadTo}
+        fromInfo := &pb.File{Path: *uploadFrom}
+        toInfo := &pb.File{Path: *uploadTo}
         if err := ft.UploadBytes(c, context.Background(), fromInfo, toInfo, &fi.FileStreamer{}); err != nil {
             log.Fatalf("client failed: %v", err)
         }

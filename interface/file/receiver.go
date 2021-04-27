@@ -12,7 +12,7 @@ type FileReceiver struct {
 }
 
 func (fr *FileReceiver) Init(msg proto.Message) error {
-    info := msg.(*pb.Info)
+    info := msg.(*pb.File)
     path := info.Path
 
     var err error
