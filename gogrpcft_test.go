@@ -75,8 +75,8 @@ func TestFileUpload(t *testing.T) {
 
         // Perform upload
 
-        fromInfo := &pb.Info{Path: srcPath}
-        toInfo := &pb.Info{Path: uploadPath}
+        fromInfo := &pb.File{Path: srcPath}
+        toInfo := &pb.File{Path: uploadPath}
 
         if err := UploadBytes(client, context.Background(), fromInfo, toInfo, fs); err != nil {
             t.Fatalf("client failed: %v", err)
@@ -137,8 +137,8 @@ func TestFileDownload(t *testing.T) {
 
         // Perform download
 
-        fromInfo := &pb.Info{Path: remotePath}
-        toInfo := &pb.Info{Path: dstPath}
+        fromInfo := &pb.File{Path: remotePath}
+        toInfo := &pb.File{Path: dstPath}
 
         if err := DownloadBytes(client, context.Background(), fromInfo, toInfo, fr); err != nil {
             t.Fatalf("client failed: %v", err)
