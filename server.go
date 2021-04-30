@@ -34,7 +34,7 @@ type BytesTransferServer struct {
 
 // Receive is the file download implementation of the bytes transferring service.
 // comment: should not be used directly.
-func (s *BytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveServer) error {
+func (s *BytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveServer) (errout error) {
 
     if stream.Context().Err() == context.Canceled {
         return status.Errorf(codes.Canceled, "client cancelled, abandoning")
@@ -52,6 +52,13 @@ func (s *BytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveSer
     if err := s.streamer.Init(streamerMsg); err != nil {
         return status.Errorf(codes.FailedPrecondition, "streamer init failed")
     }
+    defer func() {
+        if err := s.streamer.Finalize(); err != nil {
+            if errout == nil {
+                errout = status.Errorf(codes.FailedPrecondition, "streamer finalize failed")
+            }
+        }
+    }()
 
 	for s.streamer.HasNext() {
 		buf, err := s.streamer.GetNext()
@@ -66,16 +73,12 @@ func (s *BytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveSer
         }
 	}
 
-    if err := s.streamer.Finalize(); err != nil {
-        return status.Errorf(codes.FailedPrecondition, "streamer finalize failed")
-    }
-
     return nil
 }
 
 // Send is the file upload implementation of the bytes transferring service.
 // comment: should not be used directly.
-func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) error {
+func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error) {
 
     if stream.Context().Err() == context.Canceled {
         return status.Errorf(codes.Canceled, "client cancelled, abandoning")
@@ -108,6 +111,18 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) error {
     if err := s.receiver.Init(receiverMsg); err != nil {
         return status.Errorf(codes.FailedPrecondition, "receiver init failed")
     }
+    defer func() {
+        if err := s.receiver.Finalize(); err != nil {
+            if errout == nil {
+                errout = status.Errorf(codes.FailedPrecondition, "receiver finalize failed")
+            }
+        } else {
+            stream.SendAndClose(&pb.Status{
+                Success: true,
+                Desc: fmt.Sprintf("upload succeeded"),
+            })
+        }
+    }()
 
     for {
         packet, err := stream.Recv()
@@ -136,14 +151,6 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) error {
         }
     }
 
-    if err := s.receiver.Finalize(); err != nil {
-        return status.Errorf(codes.FailedPrecondition, "receiver finalize failed")
-    }
-
-    stream.SendAndClose(&pb.Status{
-        Success: true,
-        Desc: fmt.Sprintf("upload succeeded"),
-    })
     return nil
 }
 
