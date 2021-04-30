@@ -24,7 +24,7 @@ func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, r
 
     any, err := anypb.New(streamerMsg)
     if err != nil {
-        return fmt.Errorf("failed to create any: %v", err)
+        return fmt.Errorf("failed to create 'Any' from streamer message: %v", err)
     }
 
     req := &pb.Info{
@@ -33,7 +33,7 @@ func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, r
 
     stream, err := client.Receive(ctx, req)
     if err != nil {
-        return fmt.Errorf("gRPC stream fetch failed: %v", err)
+        return fmt.Errorf("failed to fetch stream: %v", err)
     }
 
     if receiver == nil {
@@ -41,13 +41,13 @@ func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, r
     }
 
     if err := receiver.Init(receiverMsg); err != nil {
-        return fmt.Errorf("receiver init failed: %v", err)
+        return fmt.Errorf("failed to init receiver: %v", err)
     }
 
     defer func() {
         if err := receiver.Finalize(); err != nil {
             if errout == nil {
-                errout = fmt.Errorf("receiver finalize failed: %v", err)
+                errout = fmt.Errorf("failed to finalize receiver: %v", err)
             }
         }
     }()
@@ -62,14 +62,14 @@ func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, r
                 return
             }
             if err != nil {
-                errch <- fmt.Errorf("gRPC failed to receive: %v", err)
+                errch <- fmt.Errorf("failed to receive: %v", err)
                 return
             }
 
             data := res.Data
             size := len(res.Data)
             if err := receiver.Push(data[:size]); err != nil {
-                errch <- fmt.Errorf("failed to write chunk: %v", err)
+                errch <- fmt.Errorf("failed to push data to receiver: %v", err)
                 return
             }
         }
@@ -88,7 +88,7 @@ func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, rec
 
     stream, err := client.Send(ctx)
     if err != nil {
-        return fmt.Errorf("gRPC stream fetch failed: %v", err)
+        return fmt.Errorf("failed to fetch stream: %v", err)
     }
 
     if streamer == nil {
@@ -96,20 +96,20 @@ func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, rec
     }
 
     if err := streamer.Init(streamerMsg); err != nil {
-        return fmt.Errorf("streamer init failed")
+        return fmt.Errorf("failed to init streamer: %v", err)
     }
 
     defer func() {
         if err := streamer.Finalize(); err != nil {
             if errout == nil {
-                errout = fmt.Errorf("receiver finalize failed: %v", err)
+                errout = fmt.Errorf("failed to finalize stream: %v", err)
             }
         }
     }()
 
     any, err := anypb.New(receiverMsg)
     if err != nil {
-        return fmt.Errorf("failed to create any: %v", err)
+        return fmt.Errorf("failed to create 'Any' from receiver message: %v", err)
     }
 
     req := &pb.Packet{
@@ -121,7 +121,7 @@ func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, rec
     }
 
     if err := stream.Send(req); err != nil {
-        return fmt.Errorf("failed to send packet path info: %v", err)
+        return fmt.Errorf("failed to send packet with 'Info': %v", err)
     }
 
     errch := make(chan error)
@@ -131,7 +131,7 @@ func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, rec
         for streamer.HasNext() {
             buf, err := streamer.GetNext()
             if err != nil {
-                errch <- fmt.Errorf("failed to read chunk: %v", err)
+                errch <- fmt.Errorf("failed to read from streamer: %v", err)
                 return
             }
 
@@ -144,7 +144,7 @@ func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, rec
             }
 
             if err := stream.Send(req); err != nil {
-                errch <- fmt.Errorf("failed to send chunk: %v", err)
+                errch <- fmt.Errorf("failed to send 'Chunk' packet: %v", err)
                 return
             }
         }

@@ -46,16 +46,16 @@ func (s *BytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveSer
 
     streamerMsg, err := in.Msg.UnmarshalNew()
     if err != nil {
-        return status.Errorf(codes.FailedPrecondition, "unmarshal any failed: %v", err)
+        return status.Errorf(codes.InvalidArgument, "failed to unmarshal 'Info.Msg': %v", err)
     }
 
     if err := s.streamer.Init(streamerMsg); err != nil {
-        return status.Errorf(codes.FailedPrecondition, "streamer init failed")
+        return status.Errorf(codes.FailedPrecondition, "failed to init streamer")
     }
     defer func() {
         if err := s.streamer.Finalize(); err != nil {
             if errout == nil {
-                errout = status.Errorf(codes.FailedPrecondition, "streamer finalize failed")
+                errout = status.Errorf(codes.FailedPrecondition, "failed to finalize streamer")
             }
         }
     }()
@@ -63,13 +63,11 @@ func (s *BytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveSer
 	for s.streamer.HasNext() {
 		buf, err := s.streamer.GetNext()
         if err != nil {
-            errMsg := fmt.Sprintf("failed to read chunk: %v", err)
-            return status.Errorf(codes.Internal, errMsg)
+            return status.Errorf(codes.FailedPrecondition, "failed to read chunk from streamer: %v", err)
         }
 
         if err := stream.Send(&pb.Chunk{Data: buf}); err != nil {
-            errMsg := fmt.Sprintf("failed to send chunk: %v", err)
-            return status.Errorf(codes.Internal, errMsg)
+            return status.Errorf(codes.Internal, "failed to send chunk: %v", err)
         }
 	}
 
@@ -90,36 +88,35 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error)
 
     packet, err := stream.Recv()
     if err != nil {
-        errMsg := fmt.Sprintf("failed to receive first packet")
-        return status.Errorf(codes.Internal, errMsg)
+        return status.Errorf(codes.Internal, "failed to receive first packet: %v", err)
     }
 
     info, err := getInfo(packet)
     if err != nil {
         stream.SendAndClose(&pb.Status{
             Success: false,
-            Desc: "first packet is not info",
+            Desc: "first packet is not 'Info'",
         })
         return nil
     }
 
     receiverMsg, err := info.Msg.UnmarshalNew()
     if err != nil {
-        return status.Errorf(codes.FailedPrecondition, "unmarshal any failed")
+        return status.Errorf(codes.InvalidArgument, "failed to unmarshal 'Info.Msg': %v", err)
     }
 
     if err := s.receiver.Init(receiverMsg); err != nil {
-        return status.Errorf(codes.FailedPrecondition, "receiver init failed")
+        return status.Errorf(codes.FailedPrecondition, "failed to init receiver: %v", err)
     }
     defer func() {
         if err := s.receiver.Finalize(); err != nil {
             if errout == nil {
-                errout = status.Errorf(codes.FailedPrecondition, "receiver finalize failed")
+                errout = status.Errorf(codes.FailedPrecondition, "failed to finalize receiver: %v", err)
             }
         } else {
             stream.SendAndClose(&pb.Status{
                 Success: true,
-                Desc: fmt.Sprintf("upload succeeded"),
+                Desc: "send finished successfuly",
             })
         }
     }()
@@ -130,15 +127,14 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error)
             break
         }
         if err != nil {
-            errMsg := fmt.Sprintf("gRPC failed to receive: %v", err)
-            return status.Errorf(codes.Internal, errMsg)
+            return status.Errorf(codes.Internal, "failed to receive packet: %v", err)
         }
 
         chunk, err := getChunk(packet)
         if err != nil {
             stream.SendAndClose(&pb.Status{
                 Success: false,
-                Desc: "received packet is not chuck",
+                Desc: "packet is not 'Chunk'",
             })
             return nil
         }
@@ -146,8 +142,7 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error)
         size := len(data)
 
         if err := s.receiver.Push(data[:size]); err != nil {
-            errMsg := fmt.Sprintf("failed to write chunk: %v", err)
-            return status.Errorf(codes.Internal, errMsg)
+            return status.Errorf(codes.FailedPrecondition, "failed to push chunk to receiver: %v", err)
         }
     }
 
@@ -158,7 +153,7 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error)
 func getChunk(packet *pb.Packet) (*pb.Chunk, error) {
     switch x := packet.PacketOptions.(type) {
     case *pb.Packet_Info:
-        return nil, fmt.Errorf("not a info packat")
+        return nil, fmt.Errorf("not an 'Info' packat")
     case *pb.Packet_Chunk:
         return x.Chunk, nil
     default:
@@ -171,8 +166,9 @@ func getInfo(packet *pb.Packet) (*pb.Info, error) {
     case *pb.Packet_Info:
         return x.Info, nil
     case *pb.Packet_Chunk:
-        return nil, fmt.Errorf("not a chunk packet")
+        return nil, fmt.Errorf("not a 'Chunk' packet")
     default:
         return nil, fmt.Errorf("unknown packat option")
     }
 }
+
