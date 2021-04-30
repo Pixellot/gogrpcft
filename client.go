@@ -20,7 +20,7 @@ func CreateTransferClient(conn *grpc.ClientConn) pb.TransferClient {
 }
 
 // DownloadBytes downloads bytes from destination to source.
-func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMsg proto.Message, receiver BytesReceiver) error {
+func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMsg proto.Message, receiver BytesReceiver) (errout error) {
 
     any, err := anypb.New(streamerMsg)
     if err != nil {
@@ -44,17 +44,21 @@ func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, r
         return fmt.Errorf("receiver init failed: %v", err)
     }
 
+    defer func() {
+        if err := receiver.Finalize(); err != nil {
+            if errout == nil {
+                errout = fmt.Errorf("receiver finalize failed: %v", err)
+            }
+        }
+    }()
+
     errch := make(chan error)
 
     go func() {
         for {
             res, err := stream.Recv()
             if err == io.EOF {
-                if err := receiver.Finalize(); err != nil {
-                    errch <- fmt.Errorf("receiver finalize failed: %v", err)
-                } else {
-                    errch <- nil
-                }
+                errch <- nil
                 return
             }
             if err != nil {
@@ -80,7 +84,7 @@ func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, r
 }
 
 // UploadBytes uploads bytes from srouce to destination.
-func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMsg proto.Message, streamer BytesStreamer) error {
+func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMsg proto.Message, streamer BytesStreamer) (errout error) {
 
     stream, err := client.Send(ctx)
     if err != nil {
@@ -94,6 +98,14 @@ func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, rec
     if err := streamer.Init(streamerMsg); err != nil {
         return fmt.Errorf("streamer init failed")
     }
+
+    defer func() {
+        if err := streamer.Finalize(); err != nil {
+            if errout == nil {
+                errout = fmt.Errorf("receiver finalize failed: %v", err)
+            }
+        }
+    }()
 
     any, err := anypb.New(receiverMsg)
     if err != nil {
