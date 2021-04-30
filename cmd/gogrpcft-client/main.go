@@ -42,7 +42,7 @@ func main() {
         c := ft.CreateTransferClient(conn)
         fromInfo := &pb.File{Path: *downloadFrom}
         toInfo := &pb.File{Path: *downloadTo}
-        if err := ft.DownloadBytes(c, context.Background(), fromInfo, toInfo, &fi.FileReceiver{}); err != nil {
+        if err := ft.Receive(c, context.Background(), fromInfo, toInfo, &fi.FileReceiver{}); err != nil {
             log.Fatalf("client failed: %v", err)
         }
     case "upload":
@@ -52,7 +52,7 @@ func main() {
         c := ft.CreateTransferClient(conn)
         fromInfo := &pb.File{Path: *uploadFrom}
         toInfo := &pb.File{Path: *uploadTo}
-        if err := ft.UploadBytes(c, context.Background(), fromInfo, toInfo, &fi.FileStreamer{}); err != nil {
+        if err := ft.Send(c, context.Background(), fromInfo, toInfo, &fi.FileStreamer{}); err != nil {
             log.Fatalf("client failed: %v", err)
         }
     default:

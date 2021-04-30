@@ -19,8 +19,8 @@ func CreateTransferClient(conn *grpc.ClientConn) pb.TransferClient {
     return pb.NewTransferClient(conn)
 }
 
-// DownloadBytes downloads bytes from destination to source.
-func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMsg proto.Message, receiver BytesReceiver) (errout error) {
+// Receive downloads bytes from destination to source.
+func Receive(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMsg proto.Message, receiver BytesReceiver) (errout error) {
 
     any, err := anypb.New(streamerMsg)
     if err != nil {
@@ -83,8 +83,8 @@ func DownloadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, r
     }
 }
 
-// UploadBytes uploads bytes from srouce to destination.
-func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMsg proto.Message, streamer BytesStreamer) (errout error) {
+// Send uploads bytes from srouce to destination.
+func Send(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMsg proto.Message, streamer BytesStreamer) (errout error) {
 
     stream, err := client.Send(ctx)
     if err != nil {
