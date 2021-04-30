@@ -151,9 +151,7 @@ func UploadBytes(client pb.TransferClient, ctx context.Context, streamerMsg, rec
 
         res, err := stream.CloseAndRecv()
         if err != nil {
-            errch <- fmt.Errorf("failed to close and receive status: %v", err)
-        } else if !res.Success {
-            errch <- fmt.Errorf("bad response from server: %s", res.Desc)
+            errch <- fmt.Errorf("failed to close and recevie with success=%v and desc='%s': %v", res.Success, res.Desc, err)
         } else {
             errch <- nil
         }

@@ -97,7 +97,7 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error)
             Success: false,
             Desc: "first packet is not 'Info'",
         })
-        return nil
+        return status.Errorf(codes.InvalidArgument, "invalid first packet")
     }
 
     receiverMsg, err := info.Msg.UnmarshalNew()
@@ -136,7 +136,7 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error)
                 Success: false,
                 Desc: "packet is not 'Chunk'",
             })
-            return nil
+            return status.Errorf(codes.InvalidArgument, "invalid packet")
         }
         data := chunk.Data
         size := len(data)
