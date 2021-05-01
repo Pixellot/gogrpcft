@@ -50,12 +50,12 @@ func (s *BytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveSer
     }
 
     if err := s.streamer.Init(streamerMsg); err != nil {
-        return status.Errorf(codes.FailedPrecondition, "failed to init streamer")
+        return status.Errorf(codes.FailedPrecondition, "failed to init streamer: %v", err)
     }
     defer func() {
         if err := s.streamer.Finalize(); err != nil {
             if errout == nil {
-                errout = status.Errorf(codes.FailedPrecondition, "failed to finalize streamer")
+                errout = status.Errorf(codes.FailedPrecondition, "failed to finalize streamer: %v", err)
             }
         }
     }()
@@ -97,7 +97,7 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error)
             Success: false,
             Desc: "first packet is not 'Info'",
         })
-        return status.Errorf(codes.InvalidArgument, "invalid first packet")
+        return status.Errorf(codes.InvalidArgument, "invalid first packet: %v", err)
     }
 
     receiverMsg, err := info.Msg.UnmarshalNew()
@@ -136,7 +136,7 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error)
                 Success: false,
                 Desc: "packet is not 'Chunk'",
             })
-            return status.Errorf(codes.InvalidArgument, "invalid packet")
+            return status.Errorf(codes.InvalidArgument, "invalid packet: %v", err)
         }
         data := chunk.Data
         size := len(data)
