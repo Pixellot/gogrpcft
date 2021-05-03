@@ -28,7 +28,7 @@ func DownloadFile(client pb.FilesTransferClient, ctx context.Context, from, to s
 
     f, err := os.Create(to)
     if err != nil {
-        return fmt.Errorf("failed to create downloaded file: %v", err)
+        return fmt.Errorf("failed to create downloaded file '%s': %v", to, err)
     }
     defer f.Close()
 
@@ -71,10 +71,7 @@ func UploadFile(client pb.FilesTransferClient, ctx context.Context, from, to str
         return fmt.Errorf("path not found: %s", from)
     }
     if info.IsDir() {
-        return fmt.Errorf("unable to upload directory: %s", from)
-    }
-    if info.Size() == 0 {
-        return fmt.Errorf("file is empty: %s", from)
+        return fmt.Errorf("unable to upload directory, '%s' must be file", from)
     }
 
     stream, err := client.Upload(ctx)
@@ -95,7 +92,7 @@ func UploadFile(client pb.FilesTransferClient, ctx context.Context, from, to str
 
 	f, err := os.Open(from)
 	if err != nil {
-		return fmt.Errorf("failed to open file %s: %v", from, err)
+		return fmt.Errorf("failed to open file '%s': %v", from, err)
 	}
 	defer f.Close()
 
@@ -133,9 +130,7 @@ func UploadFile(client pb.FilesTransferClient, ctx context.Context, from, to str
 
         res, err := stream.CloseAndRecv()
         if err != nil {
-            errch <- fmt.Errorf("failed to close and receive status: %v", err)
-        } else if !res.Success {
-            errch <- fmt.Errorf("bad response from server: %s", res.Msg)
+            errch <- fmt.Errorf("failed to close and receive with success=%v and msg='%s': %v", res.Success, res.Msg, err)
         } else {
             errch <- nil
         }
@@ -148,3 +143,4 @@ func UploadFile(client pb.FilesTransferClient, ctx context.Context, from, to str
         return ctx.Err()
     }
 }
+

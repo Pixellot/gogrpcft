@@ -32,22 +32,15 @@ func (s *filesTransferServer) Download(in *pb.FileInfo, stream pb.FilesTransfer_
 
     info, err := os.Stat(in.Path)
     if os.IsNotExist(err) {
-        errMsg := fmt.Sprintf("path not found: %s", in.Path)
-        return status.Errorf(codes.FailedPrecondition, errMsg)
+        return status.Errorf(codes.FailedPrecondition, "path '%s' not found", in.Path)
     }
     if info.IsDir() {
-        errMsg := fmt.Sprintf("unable to download directory: %s", in.Path)
-        return status.Errorf(codes.FailedPrecondition, errMsg)
-    }
-    if info.Size() == 0 {
-        errMsg := fmt.Sprintf("file is empty: %s", in.Path)
-        return status.Errorf(codes.FailedPrecondition, errMsg)
+        return status.Errorf(codes.FailedPrecondition, "unable to download directory '%s'", in.Path)
     }
 
 	f, err := os.Open(in.Path)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to open file %s: %v", in.Path, err)
-        return status.Errorf(codes.FailedPrecondition, errMsg)
+        return status.Errorf(codes.FailedPrecondition, "failed to open file '%s': %v", in.Path, err)
 	}
 	defer f.Close()
 
@@ -60,14 +53,12 @@ func (s *filesTransferServer) Download(in *pb.FileInfo, stream pb.FilesTransfer_
             break
         }
         if err != nil {
-            errMsg := fmt.Sprintf("failed to read chunk: %v", err)
-            return status.Errorf(codes.Internal, errMsg)
+            return status.Errorf(codes.FailedPrecondition, "failed to read chunk: %v", err)
         }
 
         buf = buf[:n]
         if err := stream.Send(&pb.Chunk{Data: buf}); err != nil {
-            errMsg := fmt.Sprintf("failed to send chunk: %v", err)
-            return status.Errorf(codes.Internal, errMsg)
+            return status.Errorf(codes.Internal, "failed to send chunk: %v", err)
         }
 	}
 
@@ -84,26 +75,25 @@ func (s *filesTransferServer) Upload(stream pb.FilesTransfer_UploadServer) error
 
     packet, err := stream.Recv()
     if err != nil {
-        errMsg := fmt.Sprintf("failed to receive first packet")
-        return status.Errorf(codes.Internal, errMsg)
+        return status.Errorf(codes.Internal, "failed to receive first packet: %v", err)
     }
 
     dst, err := getPath(packet)
     if err != nil {
         stream.SendAndClose(&pb.Status{
             Success: false,
-            Msg: "first packet is not file info",
+            Msg: "first packet is not 'Info'",
         })
-        return nil
+        return status.Errorf(codes.InvalidArgument, "invalid first packet: %v", err)
     }
 
     f, err := os.Create(dst)
     if err != nil {
         stream.SendAndClose(&pb.Status{
             Success: false,
-            Msg: fmt.Sprintf("failed to create file %s: %v", dst, err),
+            Msg: "file creation failed",
         })
-        return nil
+        return status.Errorf(codes.FailedPrecondition, "failed to create file '%s': %v", dst, err)
     }
     defer f.Close()
 
@@ -113,29 +103,27 @@ func (s *filesTransferServer) Upload(stream pb.FilesTransfer_UploadServer) error
             break
         }
         if err != nil {
-            errMsg := fmt.Sprintf("gRPC failed to receive: %v", err)
-            return status.Errorf(codes.Internal, errMsg)
+            return status.Errorf(codes.Internal, "gRPC failed to receive: %v", err)
         }
 
         data, err := getData(packet)
         if err != nil {
             stream.SendAndClose(&pb.Status{
                 Success: false,
-                Msg: "received packet is not chuck",
+                Msg: "packet is not 'Chunk'",
             })
-            return nil
+            return status.Errorf(codes.InvalidArgument, "invalid packet: %v", err)
         }
         size := len(data)
 
         if _, err := f.Write(data[:size]); err != nil {
-            errMsg := fmt.Sprintf("failed to write chunk: %v", err)
-            return status.Errorf(codes.Internal, errMsg)
+            return status.Errorf(codes.FailedPrecondition, "failed to write chunk: %v", err)
         }
     }
 
     stream.SendAndClose(&pb.Status{
         Success: true,
-        Msg: fmt.Sprintf("file upload succeeded: %s", dst),
+        Msg: fmt.Sprintf("file '%s' upload finished successfuly", dst),
     })
     return nil
 }
