@@ -28,6 +28,8 @@ func main() {
         log.Fatal("expected 'download' or 'upload' command")
     }
 
+    flag.Parse()
+
     switch os.Args[1] {
 
     case "download":

@@ -13,6 +13,7 @@ import (
 func main() {
 
     address := flag.String("address", "127.0.0.1:8080", "server address")
+    flag.Parse()
 
     lis, err := net.Listen("tcp", *address)
     if err != nil {
