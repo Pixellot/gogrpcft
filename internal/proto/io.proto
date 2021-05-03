@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package Io;
 
-option go_package = "github.com/oren12321/gogrpcft/proto";
+option go_package = "github.com/oren12321/gogrpcft/v2/proto";
 
 service FilesTransfer {
     rpc Download (FileInfo) returns (stream Chunk) {}
