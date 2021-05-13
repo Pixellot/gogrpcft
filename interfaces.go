@@ -7,13 +7,13 @@ import (
 type BytesStreamer interface {
     Init(msg proto.Message) error
     HasNext() bool
-    GetNext() ([]byte, error)
+    GetNext() ([]byte, proto.Message, error)
     Finalize() error
 }
 
 type BytesReceiver interface {
     Init(msg proto.Message) error
-    Push(data []byte) error
+    Push(data []byte, metadata proto.Message) error
     Finalize() error
 }
 

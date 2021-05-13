@@ -46,7 +46,7 @@ func (c *transferClient) Receive(ctx context.Context, in *Info, opts ...grpc.Cal
 }
 
 type Transfer_ReceiveClient interface {
-	Recv() (*Chunk, error)
+	Recv() (*Packet, error)
 	grpc.ClientStream
 }
 
@@ -54,8 +54,8 @@ type transferReceiveClient struct {
 	grpc.ClientStream
 }
 
-func (x *transferReceiveClient) Recv() (*Chunk, error) {
-	m := new(Chunk)
+func (x *transferReceiveClient) Recv() (*Packet, error) {
+	m := new(Packet)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func _Transfer_Receive_Handler(srv interface{}, stream grpc.ServerStream) error 
 }
 
 type Transfer_ReceiveServer interface {
-	Send(*Chunk) error
+	Send(*Packet) error
 	grpc.ServerStream
 }
 
@@ -145,7 +145,7 @@ type transferReceiveServer struct {
 	grpc.ServerStream
 }
 
-func (x *transferReceiveServer) Send(m *Chunk) error {
+func (x *transferReceiveServer) Send(m *Packet) error {
 	return x.ServerStream.SendMsg(m)
 }
 

@@ -66,9 +66,16 @@ func Receive(client pb.TransferClient, ctx context.Context, streamerMsg, receive
                 return
             }
 
-            data := res.Data
-            size := len(res.Data)
-            if err := receiver.Push(data[:size]); err != nil {
+            data := res.Chunk.Data
+            size := len(res.Chunk.Data)
+
+            metadata, err := res.Info.Msg.UnmarshalNew()
+            if err != nil {
+                errch <- fmt.Errorf("failed to unmarshal 'Info.Msg': %v", err)
+                return
+            }
+
+            if err := receiver.Push(data[:size], metadata); err != nil {
                 errch <- fmt.Errorf("failed to push data to receiver: %v", err)
                 return
             }
@@ -113,10 +120,11 @@ func Send(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMs
     }
 
     req := &pb.Packet{
-        PacketOptions: &pb.Packet_Info{
-            Info: &pb.Info{
-                Msg: any,
-            },
+        Info: &pb.Info{
+            Msg: any,
+        },
+        Chunk: &pb.Chunk{
+            Data: nil,
         },
     }
 
@@ -129,17 +137,29 @@ func Send(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMs
     go func() {
 
         for streamer.HasNext() {
-            buf, err := streamer.GetNext()
+            buf, metadata, err := streamer.GetNext()
             if err != nil {
                 errch <- fmt.Errorf("failed to read from streamer: %v", err)
                 return
             }
 
+            if metadata == nil {
+                errch <- fmt.Errorf("metadata can not be nil")
+                return
+            }
+
+            any, err := anypb.New(metadata)
+            if err != nil {
+                errch <- fmt.Errorf("failed to create 'Any' from receiver metadata message: %v", err)
+                return
+            }
+
             req := &pb.Packet{
-                PacketOptions: &pb.Packet_Chunk{
-                    Chunk: &pb.Chunk{
-                        Data: buf,
-                    },
+                Info: &pb.Info{
+                    Msg: any,
+                },
+                Chunk: &pb.Chunk{
+                    Data: buf,
                 },
             }
 

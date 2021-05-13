@@ -29,7 +29,7 @@ func (fr *FileReceiver) Init(msg proto.Message) error {
     return nil
 }
 
-func (fr *FileReceiver) Push(data []byte) error {
+func (fr *FileReceiver) Push(data []byte, metadata proto.Message) error {
     _, err := fr.f.Write(data)
     if err != nil {
         return fmt.Errorf("failed to write data to '%s' - file may be corrupted: %v", fr.path, err)

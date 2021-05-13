@@ -1,13 +1,14 @@
 package gogrpcft
 
 import (
-    "fmt"
     "io"
     "context"
 
     "google.golang.org/grpc"
     "google.golang.org/grpc/codes"
     "google.golang.org/grpc/status"
+
+    "google.golang.org/protobuf/types/known/anypb"
 
     pb "github.com/oren12321/gogrpcft/v2/internal/proto"
 )
@@ -61,12 +62,26 @@ func (s *BytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveSer
     }()
 
 	for s.streamer.HasNext() {
-		buf, err := s.streamer.GetNext()
+		buf, metadata, err := s.streamer.GetNext()
         if err != nil {
             return status.Errorf(codes.FailedPrecondition, "failed to read chunk from streamer: %v", err)
         }
 
-        if err := stream.Send(&pb.Chunk{Data: buf}); err != nil {
+        any, err := anypb.New(metadata)
+        if err != nil {
+            return status.Errorf(codes.InvalidArgument, "failed to create 'Any' from streamer metadata message: %v", err)
+        }
+
+        req := &pb.Packet{
+            Info: &pb.Info{
+                Msg: any,
+            },
+            Chunk: &pb.Chunk{
+                Data: buf,
+            },
+        }
+
+        if err := stream.Send(req); err != nil {
             return status.Errorf(codes.Internal, "failed to send chunk: %v", err)
         }
 	}
@@ -91,16 +106,7 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error)
         return status.Errorf(codes.Internal, "failed to receive first packet: %v", err)
     }
 
-    info, err := getInfo(packet)
-    if err != nil {
-        stream.SendAndClose(&pb.Status{
-            Success: false,
-            Desc: "first packet is not 'Info'",
-        })
-        return status.Errorf(codes.InvalidArgument, "invalid first packet: %v", err)
-    }
-
-    receiverMsg, err := info.Msg.UnmarshalNew()
+    receiverMsg, err := packet.Info.Msg.UnmarshalNew()
     if err != nil {
         return status.Errorf(codes.InvalidArgument, "failed to unmarshal 'Info.Msg': %v", err)
     }
@@ -130,45 +136,19 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error)
             return status.Errorf(codes.Internal, "failed to receive packet: %v", err)
         }
 
-        chunk, err := getChunk(packet)
-        if err != nil {
-            stream.SendAndClose(&pb.Status{
-                Success: false,
-                Desc: "packet is not 'Chunk'",
-            })
-            return status.Errorf(codes.InvalidArgument, "invalid packet: %v", err)
-        }
-        data := chunk.Data
+        data := packet.Chunk.Data
         size := len(data)
 
-        if err := s.receiver.Push(data[:size]); err != nil {
+        metadata, err := packet.Info.Msg.UnmarshalNew()
+        if err != nil {
+            return status.Errorf(codes.InvalidArgument, "failed to unmarshal 'Info.Msg': %v", err)
+        }
+
+        if err := s.receiver.Push(data[:size], metadata); err != nil {
             return status.Errorf(codes.FailedPrecondition, "failed to push chunk to receiver: %v", err)
         }
     }
 
     return nil
-}
-
-
-func getChunk(packet *pb.Packet) (*pb.Chunk, error) {
-    switch x := packet.PacketOptions.(type) {
-    case *pb.Packet_Info:
-        return nil, fmt.Errorf("not an 'Info' packat")
-    case *pb.Packet_Chunk:
-        return x.Chunk, nil
-    default:
-        return nil, fmt.Errorf("unknown packat option")
-    }
-}
-
-func getInfo(packet *pb.Packet) (*pb.Info, error) {
-    switch x := packet.PacketOptions.(type) {
-    case *pb.Packet_Info:
-        return x.Info, nil
-    case *pb.Packet_Chunk:
-        return nil, fmt.Errorf("not a 'Chunk' packet")
-    default:
-        return nil, fmt.Errorf("unknown packat option")
-    }
 }
 

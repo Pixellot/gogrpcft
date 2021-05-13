@@ -6,6 +6,8 @@ import (
     "fmt"
 
     "google.golang.org/protobuf/proto"
+    "google.golang.org/protobuf/types/known/emptypb"
+
     pb "github.com/oren12321/gogrpcft/v2/interface/file/proto"
 )
 
@@ -37,16 +39,17 @@ func (fs *FileStreamer) HasNext() bool {
     return !fs.empty
 }
 
-func (fs *FileStreamer) GetNext() ([]byte, error) {
+func (fs *FileStreamer) GetNext() ([]byte, proto.Message, error) {
     n, err := fs.f.Read(fs.buf)
     if err == io.EOF {
         fs.empty = true
-        return nil, nil
+        return nil, &emptypb.Empty{}, nil
     }
     if err != nil {
-        return nil, fmt.Errorf("failed to read data from '%s': %v", fs.path, err)
+        return nil, &emptypb.Empty{}, fmt.Errorf("failed to read data from '%s': %v", fs.path, err)
     }
-    return fs.buf[:n], nil
+
+    return fs.buf[:n], &emptypb.Empty{}, nil
 }
 
 func (fs *FileStreamer) Finalize() error {

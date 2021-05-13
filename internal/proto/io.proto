@@ -7,7 +7,7 @@ option go_package = "github.com/oren12321/gogrpcft/proto";
 import "google/protobuf/any.proto";
 
 service Transfer {
-    rpc Receive (Info) returns (stream Chunk) {}
+    rpc Receive (Info) returns (stream Packet) {}
     rpc Send (stream Packet) returns (Status) {}
 }
 
@@ -20,10 +20,8 @@ message Chunk {
 }
 
 message Packet {
-    oneof packetOptions {
-        Info info = 1;
-        Chunk chunk = 2;
-    }
+    Info info = 1;
+    Chunk chunk = 2;
 }
 
 message Status {
