@@ -2,39 +2,17 @@ package gogrpcft
 
 import (
     "testing"
-    "log"
     "context"
-    "net"
     "os"
     "io/ioutil"
     "bytes"
     "path/filepath"
 
     "google.golang.org/grpc"
-    "google.golang.org/grpc/test/bufconn"
 
     pb "github.com/oren12321/gogrpcft/v2/interface/file/proto"
     fi "github.com/oren12321/gogrpcft/v2/interface/file"
 )
-
-var lis *bufconn.Listener
-var bts *BytesTransferServer
-
-func init() {
-    lis = bufconn.Listen(1024 * 1024)
-    s := grpc.NewServer()
-    bts = &BytesTransferServer{}
-    bts.Register(s)
-    go func() {
-        if err := s.Serve(lis); err != nil {
-            log.Fatalf("failed to listen: %v", err)
-        }
-    }()
-}
-
-func dialer(context.Context, string) (net.Conn, error) {
-    return lis.Dial()
-}
 
 func TestFileUpload(t *testing.T) {
 
