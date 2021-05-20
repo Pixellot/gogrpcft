@@ -169,9 +169,9 @@ func Send(client pb.TransferClient, ctx context.Context, streamerMsg, receiverMs
             }
         }
 
-        res, err := stream.CloseAndRecv()
+        _, err := stream.CloseAndRecv()
         if err != nil {
-            errch <- fmt.Errorf("failed to close and recevie with success=%v and desc='%s': %v", res.Success, res.Desc, err)
+            errch <- fmt.Errorf("failed to close and recevie: %v", err)
         } else {
             errch <- nil
         }

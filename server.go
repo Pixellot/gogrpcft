@@ -9,6 +9,7 @@ import (
     "google.golang.org/grpc/status"
 
     "google.golang.org/protobuf/types/known/anypb"
+    "google.golang.org/protobuf/types/known/emptypb"
 
     pb "github.com/oren12321/gogrpcft/v2/internal/proto"
 )
@@ -119,12 +120,9 @@ func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error)
             if errout == nil {
                 errout = status.Errorf(codes.FailedPrecondition, "failed to finalize receiver: %v", err)
             }
-        } else {
-            stream.SendAndClose(&pb.Status{
-                Success: true,
-                Desc: "send finished successfuly",
-            })
         }
+
+        stream.SendAndClose(&emptypb.Empty{})
     }()
 
     for {

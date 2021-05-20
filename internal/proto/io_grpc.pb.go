@@ -7,6 +7,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -73,7 +74,7 @@ func (c *transferClient) Send(ctx context.Context, opts ...grpc.CallOption) (Tra
 
 type Transfer_SendClient interface {
 	Send(*Packet) error
-	CloseAndRecv() (*Status, error)
+	CloseAndRecv() (*emptypb.Empty, error)
 	grpc.ClientStream
 }
 
@@ -85,11 +86,11 @@ func (x *transferSendClient) Send(m *Packet) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *transferSendClient) CloseAndRecv() (*Status, error) {
+func (x *transferSendClient) CloseAndRecv() (*emptypb.Empty, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(Status)
+	m := new(emptypb.Empty)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -154,7 +155,7 @@ func _Transfer_Send_Handler(srv interface{}, stream grpc.ServerStream) error {
 }
 
 type Transfer_SendServer interface {
-	SendAndClose(*Status) error
+	SendAndClose(*emptypb.Empty) error
 	Recv() (*Packet, error)
 	grpc.ServerStream
 }
@@ -163,7 +164,7 @@ type transferSendServer struct {
 	grpc.ServerStream
 }
 
-func (x *transferSendServer) SendAndClose(m *Status) error {
+func (x *transferSendServer) SendAndClose(m *emptypb.Empty) error {
 	return x.ServerStream.SendMsg(m)
 }
 

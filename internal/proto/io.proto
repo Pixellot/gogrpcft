@@ -5,10 +5,11 @@ package Io;
 option go_package = "github.com/oren12321/gogrpcft/proto";
 
 import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
 
 service Transfer {
     rpc Receive (Info) returns (stream Packet) {}
-    rpc Send (stream Packet) returns (Status) {}
+    rpc Send (stream Packet) returns (google.protobuf.Empty) {}
 }
 
 message Info {
@@ -22,10 +23,5 @@ message Chunk {
 message Packet {
     Info info = 1;
     Chunk chunk = 2;
-}
-
-message Status {
-    bool success = 1;
-    string desc = 2;
 }
 
