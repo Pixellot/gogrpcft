@@ -11,7 +11,7 @@ import (
     "google.golang.org/protobuf/types/known/anypb"
     "google.golang.org/protobuf/types/known/emptypb"
 
-    pb "github.com/oren12321/gogrpcft/v2/internal/proto"
+    pb "github.com/oren12321/gogrpcft/v3/internal/proto"
 )
 
 // SetBytesStreamer registers a bytes streamer to the gRPC server.

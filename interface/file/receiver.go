@@ -5,7 +5,7 @@ import (
     "fmt"
 
     "google.golang.org/protobuf/proto"
-    pb "github.com/oren12321/gogrpcft/v2/interface/file/proto"
+    pb "github.com/oren12321/gogrpcft/v3/interface/file/proto"
 )
 
 type FileReceiver struct {
