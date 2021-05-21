@@ -128,9 +128,12 @@ func UploadFile(client pb.FilesTransferClient, ctx context.Context, from, to str
             }
         }
 
-        res, err := stream.CloseAndRecv()
+        // gRPC reponse ignored, and should be removed in next release.
+        //res, err := stream.CloseAndRecv()
+        _, err := stream.CloseAndRecv()
         if err != nil {
-            errch <- fmt.Errorf("failed to close and receive with success=%v and msg='%s': %v", res.Success, res.Msg, err)
+            //errch <- fmt.Errorf("failed to close and receive with success=%v and msg='%s': %v", res.Success, res.Msg, err)
+            errch <- fmt.Errorf("failed to close and receive: %v", err)
         } else {
             errch <- nil
         }

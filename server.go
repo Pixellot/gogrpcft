@@ -80,19 +80,19 @@ func (s *filesTransferServer) Upload(stream pb.FilesTransfer_UploadServer) error
 
     dst, err := getPath(packet)
     if err != nil {
-        stream.SendAndClose(&pb.Status{
-            Success: false,
-            Msg: "first packet is not 'Info'",
-        })
+        //stream.SendAndClose(&pb.Status{
+        //    Success: false,
+        //    Msg: "first packet is not 'Info'",
+        //})
         return status.Errorf(codes.InvalidArgument, "invalid first packet: %v", err)
     }
 
     f, err := os.Create(dst)
     if err != nil {
-        stream.SendAndClose(&pb.Status{
-            Success: false,
-            Msg: "file creation failed",
-        })
+        //stream.SendAndClose(&pb.Status{
+        //    Success: false,
+        //    Msg: "file creation failed",
+        //})
         return status.Errorf(codes.FailedPrecondition, "failed to create file '%s': %v", dst, err)
     }
     defer f.Close()
@@ -108,10 +108,10 @@ func (s *filesTransferServer) Upload(stream pb.FilesTransfer_UploadServer) error
 
         data, err := getData(packet)
         if err != nil {
-            stream.SendAndClose(&pb.Status{
-                Success: false,
-                Msg: "packet is not 'Chunk'",
-            })
+            //stream.SendAndClose(&pb.Status{
+            //    Success: false,
+            //    Msg: "packet is not 'Chunk'",
+            //})
             return status.Errorf(codes.InvalidArgument, "invalid packet: %v", err)
         }
         size := len(data)
@@ -121,10 +121,11 @@ func (s *filesTransferServer) Upload(stream pb.FilesTransfer_UploadServer) error
         }
     }
 
-    stream.SendAndClose(&pb.Status{
-        Success: true,
-        Msg: fmt.Sprintf("file '%s' upload finished successfuly", dst),
-    })
+    //stream.SendAndClose(&pb.Status{
+    //    Success: true,
+    //    Msg: fmt.Sprintf("file '%s' upload finished successfuly", dst),
+    //})
+    stream.SendAndClose(&pb.Status{})
     return nil
 }
 
