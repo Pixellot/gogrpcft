@@ -14,10 +14,12 @@ import (
     pb "github.com/oren12321/gogrpcft/v2/internal/proto"
 )
 
+// SetBytesStreamer registers a bytes streamer to the gRPC server.
 func (s *BytesTransferServer) SetBytesStreamer(streamer BytesStreamer) {
     s.streamer = streamer
 }
 
+// SetBytesReceiver registers a bytes receiver to the gRPC server.
 func (s *BytesTransferServer) SetBytesReceiver(receiver BytesReceiver) {
     s.receiver = receiver
 }
@@ -27,6 +29,7 @@ func (s *BytesTransferServer) Register(server *grpc.Server) {
     pb.RegisterTransferServer(server, s)
 }
 
+// BytesTransferServer represents an implementation of bytes transferring gRPC server.
 type BytesTransferServer struct {
     pb.UnimplementedTransferServer
 
@@ -34,7 +37,7 @@ type BytesTransferServer struct {
     receiver BytesReceiver
 }
 
-// Receive is the file download implementation of the bytes transferring service.
+// Receive is the bytes download implementation of the bytes transferring service.
 // comment: should not be used directly.
 func (s *BytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveServer) (errout error) {
 
@@ -90,7 +93,7 @@ func (s *BytesTransferServer) Receive(in *pb.Info, stream pb.Transfer_ReceiveSer
     return nil
 }
 
-// Send is the file upload implementation of the bytes transferring service.
+// Send is the bytes upload implementation of the bytes transferring service.
 // comment: should not be used directly.
 func (s *BytesTransferServer) Send(stream pb.Transfer_SendServer) (errout error) {
 

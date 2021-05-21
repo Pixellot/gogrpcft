@@ -1,4 +1,4 @@
-// Package gogrpcft provides files transferring services via gRPC.
+// Package gogrpcft provides bytes transferring services via gRPC.
 package gogrpcft
 
 import (
@@ -14,7 +14,7 @@ import (
     pb "github.com/oren12321/gogrpcft/v2/internal/proto"
 )
 
-// CreateFilesTransferClient returns gRPC client given a connection.
+// CreateTransferClient returns gRPC client given a connection.
 func CreateTransferClient(conn *grpc.ClientConn) pb.TransferClient {
     return pb.NewTransferClient(conn)
 }
