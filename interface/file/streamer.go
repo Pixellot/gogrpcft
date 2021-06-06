@@ -8,7 +8,7 @@ import (
     "google.golang.org/protobuf/proto"
     "google.golang.org/protobuf/types/known/emptypb"
 
-    pb "github.com/oren12321/gogrpcft/v3/interface/file/proto"
+    pb "github.com/Pixellot/gogrpcft/v3/interface/file/proto"
 )
 
 type FileStreamer struct {

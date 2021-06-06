@@ -1,4 +1,4 @@
-module github.com/oren12321/gogrpcft/v3
+module github.com/Pixellot/gogrpcft/v3
 
 go 1.15
 

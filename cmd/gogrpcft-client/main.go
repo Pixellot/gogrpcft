@@ -9,10 +9,10 @@ import (
 
     "google.golang.org/grpc"
 
-    ft "github.com/oren12321/gogrpcft/v3"
+    ft "github.com/Pixellot/gogrpcft/v3"
 
-    pb "github.com/oren12321/gogrpcft/v3/interface/file/proto"
-    fi "github.com/oren12321/gogrpcft/v3/interface/file"
+    pb "github.com/Pixellot/gogrpcft/v3/interface/file/proto"
+    fi "github.com/Pixellot/gogrpcft/v3/interface/file"
 )
 
 func main() {

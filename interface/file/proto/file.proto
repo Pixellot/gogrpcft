@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package Interfaces;
 
-option go_package = "github.com/oren12321/gogrpcft/v3/interface/file/proto";
+option go_package = "github.com/Pixellot/gogrpcft/v3/interface/file/proto";
 
 message File {
     string path = 1;

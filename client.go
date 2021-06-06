@@ -11,7 +11,7 @@ import (
     "google.golang.org/protobuf/proto"
     "google.golang.org/protobuf/types/known/anypb"
 
-    pb "github.com/oren12321/gogrpcft/v3/internal/proto"
+    pb "github.com/Pixellot/gogrpcft/v3/internal/proto"
 )
 
 // CreateTransferClient returns gRPC client given a connection.

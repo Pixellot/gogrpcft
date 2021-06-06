@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package Io;
 
-option go_package = "github.com/oren12321/gogrpcft/v3/internal/proto";
+option go_package = "github.com/Pixellot/gogrpcft/v3/internal/proto";
 
 import "google/protobuf/any.proto";
 import "google/protobuf/empty.proto";
